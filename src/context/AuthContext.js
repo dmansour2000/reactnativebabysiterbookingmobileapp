@@ -108,6 +108,16 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {}
   };
 
+  const handleOAuthSession = async (data) => {
+    if (data?.token && data?.user) {
+      setToken(data.token);
+      setUser(data.user);
+      await AsyncStorage.setItem('@carenest_token', data.token);
+      await AsyncStorage.setItem('@carenest_user', JSON.stringify(data.user));
+    }
+    return data;
+  };
+
   const changePassword = async (currentPassword, newPassword) => {
     return apiRequest('/api/user/password', {
       method: 'PATCH',
@@ -140,6 +150,7 @@ export const AuthProvider = ({ children }) => {
       login,
       registerFamily,
       registerCaregiver,
+      handleOAuthSession,
       logout,
       changePassword,
       changeEmail,

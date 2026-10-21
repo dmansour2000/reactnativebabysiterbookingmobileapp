@@ -12,6 +12,7 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
@@ -271,6 +272,12 @@ export default function RegisterScreen({ navigation }) {
             onPress={handleRegister}
             loading={loading}
             style={styles.submitBtn}
+          />
+
+          {/* Google Sign-Up */}
+          <GoogleAuthButton
+            flow="register"
+            onSuccess={() => navigation.goBack()}
           />
 
           <View style={styles.footerRow}>

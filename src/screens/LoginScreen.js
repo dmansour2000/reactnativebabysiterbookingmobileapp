@@ -12,6 +12,7 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
@@ -80,6 +81,12 @@ export default function LoginScreen({ navigation }) {
             onPress={handleLogin}
             loading={loading}
             style={styles.submitBtn}
+          />
+
+          {/* Google Sign-In */}
+          <GoogleAuthButton
+            flow="login"
+            onSuccess={() => navigation.goBack()}
           />
 
           <View style={styles.footerRow}>
