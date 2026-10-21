@@ -14,6 +14,10 @@ import BookCaregiverScreen from '../screens/BookCaregiverScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import HomeScreen from '../screens/HomeScreen';
+import ServicesScreen from '../screens/ServicesScreen';
+import PoliciesScreen from '../screens/PoliciesScreen';
+import ContactUsScreen from '../screens/ContactUsScreen';
 
 import SideMenu from '../components/SideMenu';
 import { DrawerProvider, useDrawer } from '../context/DrawerContext';
@@ -64,11 +68,13 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen
-        name="ExploreTab"
-        component={ExploreScreen}
-        options={{ tabBarLabel: t('explore') }}
-      />
+      {isAuthenticated && (
+        <Tab.Screen
+          name="ExploreTab"
+          component={ExploreScreen}
+          options={{ tabBarLabel: t('explore') }}
+        />
+      )}
       {isAuthenticated && (
         <Tab.Screen
           name="BookingsTab"
@@ -101,6 +107,10 @@ function RootNavigator() {
           }}
         >
           <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Services" component={ServicesScreen} />
+          <Stack.Screen name="Policies" component={PoliciesScreen} />
+          <Stack.Screen name="ContactUs" component={ContactUsScreen} />
           <Stack.Screen name="CaregiverDetails" component={CaregiverDetailsScreen} />
           <Stack.Screen name="BookCaregiver" component={BookCaregiverScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />

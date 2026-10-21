@@ -92,6 +92,11 @@ const translations = {
     childcare: 'Child Care',
     cleaning: 'House Cleaning',
     cooking: 'Cooking / Meal Prep',
+    elderlyCare: 'Elderly Care',
+    services: 'Services',
+    policies: 'Policies',
+    contactUs: 'Contact Us',
+    aboutUs: 'About Us',
   },
   ar: {
     appName: 'كير نست',
@@ -182,6 +187,11 @@ const translations = {
     childcare: 'رعاية أطفال متكاملة',
     cleaning: 'تنظيف منزلي',
     cooking: 'طبخ وإعداد وجبات',
+    elderlyCare: 'رعاية كبار السن',
+    services: 'خدماتنا',
+    policies: 'السياسات والشروط',
+    contactUs: 'تواصل معنا',
+    aboutUs: 'من نحن',
   }
 };
 

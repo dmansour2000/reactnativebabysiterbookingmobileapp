@@ -98,12 +98,17 @@ export default function SideMenu({ navigation }) {
 
   const menuItems = [
     {
-      id: 'Explore',
-      title: t('explore'),
-      icon: 'search',
+      id: 'Home',
+      title: t('home'),
+      icon: 'home',
     },
     ...(isAuthenticated
       ? [
+          {
+            id: 'Explore',
+            title: t('explore'),
+            icon: 'search',
+          },
           {
             id: 'Bookings',
             title: t('bookings'),
@@ -111,6 +116,21 @@ export default function SideMenu({ navigation }) {
           },
         ]
       : []),
+    {
+      id: 'Services',
+      title: t('services'),
+      icon: 'sparkles',
+    },
+    {
+      id: 'Policies',
+      title: t('policies'),
+      icon: 'document-text',
+    },
+    {
+      id: 'ContactUs',
+      title: t('contactUs'),
+      icon: 'mail',
+    },
     {
       id: 'Safety',
       title: t('safety'),
