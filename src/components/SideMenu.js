@@ -27,14 +27,14 @@ export default function SideMenu({ navigation }) {
   const { user, isAuthenticated, logout } = useAuth();
   const { isOpen, closeDrawer, currentScreen, navigateTo } = useDrawer();
 
-  // Animation values
-  const slideAnim = useRef(new Animated.Value(isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH)).current;
+  // Animation values - always slide from left (-DRAWER_WIDTH to 0)
+  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isOpen) {
-      // Reset starting position before animating in
-      slideAnim.setValue(isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH);
+      // Reset starting position before animating in (always from left)
+      slideAnim.setValue(-DRAWER_WIDTH);
       fadeAnim.setValue(0);
 
       Animated.parallel([
@@ -50,12 +50,12 @@ export default function SideMenu({ navigation }) {
         }),
       ]).start();
     }
-  }, [isOpen, isRTL]);
+  }, [isOpen]);
 
   const handleClose = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH,
+        toValue: -DRAWER_WIDTH,
         duration: 200,
         useNativeDriver: true,
       }),
@@ -127,11 +127,11 @@ export default function SideMenu({ navigation }) {
           <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
         </TouchableWithoutFeedback>
 
-        {/* Animated Drawer Panel */}
+        {/* Animated Drawer Panel - always anchored to the left */}
         <Animated.View
           style={[
             styles.drawerPanel,
-            isRTL ? styles.drawerRight : styles.drawerLeft,
+            styles.drawerLeft,
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
