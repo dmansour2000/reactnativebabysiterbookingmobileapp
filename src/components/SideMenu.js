@@ -136,28 +136,14 @@ export default function SideMenu({ navigation }) {
           ]}
         >
           <SafeAreaView style={styles.safeArea}>
-            {/* Drawer Brand Header */}
-            <View style={styles.brandHeader}>
-              <View style={[styles.brandRow, isRTL && styles.rowRTL]}>
-                <View style={styles.logoBadge}>
-                  <Image
-                    source={require('../../assets/icon.png')}
-                    style={styles.logoImage}
-                    resizeMode="cover"
-                  />
-                </View>
-                <View>
-                  <Text style={styles.brandTitle}>CareNest</Text>
-                  <Text style={styles.brandArabicTitle}>كير نست</Text>
-                </View>
-              </View>
-
+            {/* Top Close Action (No header bar) */}
+            <View style={[styles.topBar, isRTL && styles.rowRTL]}>
               <TouchableOpacity
                 style={styles.closeBtn}
                 onPress={handleClose}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={24} color={colors.white} />
+                <Ionicons name="close" size={22} color="#f0f2f5" />
               </TouchableOpacity>
             </View>
 
@@ -171,10 +157,10 @@ export default function SideMenu({ navigation }) {
                     </Text>
                   </View>
                   <View style={styles.userDetails}>
-                    <Text style={styles.userName} numberOfLines={1}>
+                    <Text style={[styles.userName, isRTL && styles.textRTL]} numberOfLines={1}>
                       {user?.username || user?.name}
                     </Text>
-                    <Text style={styles.userEmail} numberOfLines={1}>
+                    <Text style={[styles.userEmail, isRTL && styles.textRTL]} numberOfLines={1}>
                       {user?.email}
                     </Text>
                     <Badge
@@ -226,7 +212,7 @@ export default function SideMenu({ navigation }) {
                     <Ionicons
                       name={item.icon}
                       size={20}
-                      color={active ? colors.white : colors.plum}
+                      color={active ? '#ffffff' : '#a2adb9'}
                     />
                     <Text
                       style={[
@@ -241,7 +227,7 @@ export default function SideMenu({ navigation }) {
                       <Ionicons
                         name={isRTL ? 'chevron-back' : 'chevron-forward'}
                         size={16}
-                        color={colors.white}
+                        color="#ffffff"
                         style={styles.activeChevron}
                       />
                     )}
@@ -253,7 +239,7 @@ export default function SideMenu({ navigation }) {
             {/* Language Switcher Section Inside Side Menu */}
             <View style={styles.langSection}>
               <View style={[styles.langHeaderRow, isRTL && styles.rowRTL]}>
-                <Ionicons name="language" size={18} color={colors.plum} />
+                <Ionicons name="language" size={17} color="#d4dbe3" />
                 <Text style={styles.langSectionTitle}>
                   {locale === 'ar' ? 'لغة التطبيق' : 'App Language'}
                 </Text>
@@ -303,7 +289,7 @@ export default function SideMenu({ navigation }) {
                   style={[styles.logoutButton, isRTL && styles.rowRTL]}
                   onPress={handleLogout}
                 >
-                  <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+                  <Ionicons name="log-out-outline" size={18} color="#f87171" />
                   <Text style={styles.logoutText}>{t('logout')}</Text>
                 </TouchableOpacity>
               ) : null}
@@ -332,12 +318,12 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: DRAWER_WIDTH,
-    backgroundColor: '#ffffff',
-    shadowColor: '#300f38',
+    backgroundColor: '#1e232a', // Dark grey background
+    shadowColor: '#000000',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    elevation: 24,
   },
   drawerLeft: {
     left: 0,
@@ -352,55 +338,32 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     flexDirection: 'column',
+    backgroundColor: '#1e232a',
   },
-  brandHeader: {
-    backgroundColor: colors.primary,
+  topBar: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  logoBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  logoImage: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-  },
-  brandTitle: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  brandArabicTitle: {
-    color: '#ffe4f7',
-    fontSize: 12,
-    fontWeight: '600',
   },
   closeBtn: {
-    padding: 6,
+    width: 34,
+    height: 34,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   userCard: {
-    backgroundColor: '#fbf7fb',
+    backgroundColor: '#272d36', // Darker grey card surface
+    marginHorizontal: spacing.sm,
+    marginVertical: spacing.xs,
     padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1e4f2',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#343b46',
   },
   userRow: {
     flexDirection: 'row',
@@ -411,12 +374,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.plum,
+    backgroundColor: '#683f80',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarLetter: {
-    color: colors.white,
+    color: '#ffffff',
     fontSize: 20,
     fontWeight: '800',
   },
@@ -426,15 +389,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontWeight: '800',
-    color: colors.text,
+    color: '#f3f4f6',
   },
   userEmail: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: '#9ca3af',
     marginVertical: 2,
   },
   rolePill: {
     marginTop: 2,
+    alignSelf: 'flex-start',
   },
   guestBox: {
     paddingVertical: 4,
@@ -442,11 +406,11 @@ const styles = StyleSheet.create({
   guestTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: colors.text,
+    color: '#f3f4f6',
   },
   guestSubtitle: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: '#9ca3af',
     marginTop: 2,
     marginBottom: 10,
   },
@@ -456,23 +420,23 @@ const styles = StyleSheet.create({
   },
   guestBtn: {
     flex: 1,
-    backgroundColor: colors.plum,
+    backgroundColor: '#683f80',
     paddingVertical: 8,
     borderRadius: radius.md,
     alignItems: 'center',
   },
   guestBtnText: {
-    color: colors.white,
+    color: '#ffffff',
     fontSize: 12,
     fontWeight: '700',
   },
   guestBtnOutline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.plum,
+    borderColor: '#4e5664',
   },
   guestBtnTextOutline: {
-    color: colors.plum,
+    color: '#e5e7eb',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -487,31 +451,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: radius.md,
-    marginBottom: 4,
+    marginBottom: 6,
     gap: 12,
   },
   menuItemActive: {
-    backgroundColor: colors.plum,
+    backgroundColor: '#373f4c', // Refined active item in dark grey menu
   },
   menuText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.text,
+    color: '#cbd5e1',
     flex: 1,
   },
   menuTextActive: {
-    color: colors.white,
+    color: '#ffffff',
   },
   activeChevron: {
     marginLeft: 'auto',
   },
   langSection: {
-    backgroundColor: '#faf5ff',
+    backgroundColor: '#272d36',
     marginHorizontal: spacing.sm,
     padding: 12,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#eedcee',
+    borderColor: '#343b46',
     marginBottom: 8,
   },
   langHeaderRow: {
@@ -523,15 +487,15 @@ const styles = StyleSheet.create({
   langSectionTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: colors.plum,
+    color: '#e2e8f0',
   },
   langToggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1b1f24',
     borderRadius: radius.pill,
     padding: 3,
     borderWidth: 1,
-    borderColor: '#e7dbe9',
+    borderColor: '#343b46',
   },
   langOption: {
     flex: 1,
@@ -540,21 +504,21 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   langOptionActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#683f80',
   },
   langOptionText: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.plum,
+    color: '#9ca3af',
   },
   langOptionTextActive: {
-    color: colors.white,
+    color: '#ffffff',
   },
   footerContainer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#f1e8f2',
+    borderTopColor: '#2f3640',
     paddingTop: 10,
   },
   logoutButton: {
@@ -567,11 +531,11 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.danger,
+    color: '#f87171',
   },
   versionText: {
     fontSize: 10,
-    color: colors.textLight,
+    color: '#6b7280',
     textAlign: 'center',
     marginTop: 4,
   },

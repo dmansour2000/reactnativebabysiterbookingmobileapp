@@ -4,12 +4,18 @@ export const colors = {
   gradientEnd: '#a59ff5',
   
   // Brand Accents
-  primary: '#d954b2', // Header and primary branding
-  primaryDark: '#b2398e',
+  primary: '#4a225d', // Dark purple header background
+  primaryDark: '#361645',
   plum: '#683f80',    // Buttons, active tabs, strong emphasis
-  plumDark: '#4a2b5c',
+  plumDark: '#2d113a',
   plumLight: '#79336d',
   eyebrow: '#7a3b79',
+
+  // Dark Grey Drawer Colors
+  drawerBg: '#1f242b',
+  drawerCardBg: '#2a3039',
+  drawerBorder: '#363d47',
+  drawerActiveItem: '#3f4654',
 
   // Cards and Layout
   cardBg: '#ffffff',
