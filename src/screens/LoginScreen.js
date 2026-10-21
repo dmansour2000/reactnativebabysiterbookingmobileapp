@@ -44,7 +44,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <ScreenWrapper>
-      <Header showBack navigation={navigation} title={t('login')} />
+      <Header title={t('login')} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.card}>
           <Text style={[styles.title, isRTL && styles.textRTL]}>{t('login')}</Text>
