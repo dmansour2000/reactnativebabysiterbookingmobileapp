@@ -108,7 +108,11 @@ export default function RegisterScreen({ navigation }) {
       }
 
       Alert.alert(t('success'), t('registrationSuccessful') || 'Account created successfully!');
-      navigation.goBack();
+      if (role === 'user') {
+        navigation.navigate('Main', { screen: 'ExploreTab' });
+      } else {
+        navigation.navigate('Main', { screen: 'HomeTab' });
+      }
     } catch (err) {
       Alert.alert(t('error'), err.message || t('registrationFailed'));
     } finally {
@@ -287,7 +291,13 @@ export default function RegisterScreen({ navigation }) {
           {/* Google Sign-Up */}
           <GoogleAuthButton
             flow="register"
-            onSuccess={() => navigation.goBack()}
+            onSuccess={(authResult) => {
+              if (authResult?.user?.role === 'user') {
+                navigation.navigate('Main', { screen: 'ExploreTab' });
+              } else {
+                navigation.navigate('Main', { screen: 'HomeTab' });
+              }
+            }}
           />
 
           <View style={styles.footerRow}>

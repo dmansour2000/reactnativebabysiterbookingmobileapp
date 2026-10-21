@@ -33,8 +33,12 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await login(identifier, password);
-      navigation.goBack();
+      const data = await login(identifier, password);
+      if (data?.user?.role === 'user') {
+        navigation.navigate('Main', { screen: 'ExploreTab' });
+      } else {
+        navigation.navigate('Main', { screen: 'HomeTab' });
+      }
     } catch (err) {
       Alert.alert(t('error'), err.message || t('loginFailed'));
     } finally {
@@ -92,7 +96,13 @@ export default function LoginScreen({ navigation }) {
           {/* Google Sign-In */}
           <GoogleAuthButton
             flow="login"
-            onSuccess={() => navigation.goBack()}
+            onSuccess={(authResult) => {
+              if (authResult?.user?.role === 'user') {
+                navigation.navigate('Main', { screen: 'ExploreTab' });
+              } else {
+                navigation.navigate('Main', { screen: 'HomeTab' });
+              }
+            }}
           />
 
           <View style={styles.footerRow}>
