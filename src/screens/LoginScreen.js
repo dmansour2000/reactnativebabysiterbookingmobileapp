@@ -34,10 +34,10 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       const data = await login(identifier, password);
-      if (data?.user?.role === 'user') {
-        navigation.navigate('Main', { screen: 'ExploreTab' });
+      if (data?.user?.role === 'babysitter') {
+        navigation.navigate('Main', { screen: 'BookingsTab' });
       } else {
-        navigation.navigate('Main', { screen: 'HomeTab' });
+        navigation.navigate('Main', { screen: 'ExploreTab' });
       }
     } catch (err) {
       Alert.alert(t('error'), err.message || t('loginFailed'));
@@ -97,10 +97,10 @@ export default function LoginScreen({ navigation }) {
           <GoogleAuthButton
             flow="login"
             onSuccess={(authResult) => {
-              if (authResult?.user?.role === 'user') {
-                navigation.navigate('Main', { screen: 'ExploreTab' });
+              if (authResult?.user?.role === 'babysitter') {
+                navigation.navigate('Main', { screen: 'BookingsTab' });
               } else {
-                navigation.navigate('Main', { screen: 'HomeTab' });
+                navigation.navigate('Main', { screen: 'ExploreTab' });
               }
             }}
           />

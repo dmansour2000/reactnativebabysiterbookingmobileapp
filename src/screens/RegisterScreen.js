@@ -108,10 +108,10 @@ export default function RegisterScreen({ navigation }) {
       }
 
       Alert.alert(t('success'), t('registrationSuccessful') || 'Account created successfully!');
-      if (role === 'user') {
-        navigation.navigate('Main', { screen: 'ExploreTab' });
+      if (role === 'babysitter') {
+        navigation.navigate('Main', { screen: 'BookingsTab' });
       } else {
-        navigation.navigate('Main', { screen: 'HomeTab' });
+        navigation.navigate('Main', { screen: 'ExploreTab' });
       }
     } catch (err) {
       Alert.alert(t('error'), err.message || t('registrationFailed'));
@@ -292,10 +292,10 @@ export default function RegisterScreen({ navigation }) {
           <GoogleAuthButton
             flow="register"
             onSuccess={(authResult) => {
-              if (authResult?.user?.role === 'user') {
-                navigation.navigate('Main', { screen: 'ExploreTab' });
+              if (authResult?.user?.role === 'babysitter') {
+                navigation.navigate('Main', { screen: 'BookingsTab' });
               } else {
-                navigation.navigate('Main', { screen: 'HomeTab' });
+                navigation.navigate('Main', { screen: 'ExploreTab' });
               }
             }}
           />
