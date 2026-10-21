@@ -13,9 +13,10 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import CaregiverAvatar from '../components/CaregiverAvatar';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
-import { apiRequest } from '../services/api';
+import { apiRequest, API_BASE } from '../services/api';
 
 export default function BookCaregiverScreen({ route, navigation }) {
   const { sitter } = route.params || {};
@@ -82,15 +83,28 @@ export default function BookCaregiverScreen({ route, navigation }) {
 
   const servicesList = Array.isArray(sitter?.services) ? sitter.services : ['babysitting'];
 
+  const photoUri = sitter?.photoUrl
+    ? (sitter.photoUrl.startsWith('http') ? sitter.photoUrl : `${API_BASE}${sitter.photoUrl}`)
+    : (sitter?._id ? `${API_BASE}/api/babysitter/photo/${sitter._id}` : null);
+
   return (
     <ScreenWrapper>
       <Header showBack navigation={navigation} title={t('bookCaregiver')} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card>
-          <Text style={[styles.heading, isRTL && styles.textRTL]}>{t('bookingDetails')}</Text>
-          <Text style={[styles.subheading, isRTL && styles.textRTL]}>
-            Booking with <Text style={styles.boldText}>{sitter?.name}</Text>
-          </Text>
+          <View style={[styles.sitterHeaderRow, isRTL && styles.rowRTL]}>
+            <CaregiverAvatar
+              uri={photoUri}
+              style={styles.headerAvatar}
+              imageStyle={styles.headerAvatarImage}
+            />
+            <View style={styles.headerTextCol}>
+              <Text style={[styles.heading, isRTL && styles.textRTL]}>{t('bookingDetails')}</Text>
+              <Text style={[styles.subheading, isRTL && styles.textRTL]}>
+                {isRTL ? 'حجز مع ' : 'Booking with '}<Text style={styles.boldText}>{sitter?.name}</Text>
+              </Text>
+            </View>
+          </View>
 
           {/* Service Selector */}
           <Text style={[styles.fieldLabel, isRTL && styles.textRTL]}>{t('selectServices')}</Text>
@@ -191,16 +205,36 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: 40,
   },
+  sitterHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: spacing.md,
+  },
+  headerAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    overflow: 'hidden',
+  },
+  headerAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  headerTextCol: {
+    flex: 1,
+  },
   heading: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subheading: {
     fontSize: 14,
     color: colors.textMuted,
-    marginBottom: spacing.md,
   },
   boldText: {
     color: colors.plum,

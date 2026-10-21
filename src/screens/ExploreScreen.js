@@ -16,9 +16,10 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import CaregiverAvatar from '../components/CaregiverAvatar';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
-import { apiRequest } from '../services/api';
+import { apiRequest, API_BASE } from '../services/api';
 
 const CITIES = ['All', 'Cairo', 'Giza', 'Alexandria', 'Mansoura', 'Tanta'];
 const SERVICES = [
@@ -73,52 +74,59 @@ export default function ExploreScreen({ navigation }) {
   };
 
   const filteredSitters = sitters.filter(sitter => {
-    if (availableOnly && !sitter.isAvailable) return false;
+    const isBusy = !!(sitter.hasAcceptedBooking || sitter.isBookedAndAccepted);
+    if (availableOnly && isBusy) return false;
     return true;
   });
 
   const renderSitterCard = ({ item }) => {
-    const isAvailable = !!item.isAvailable;
+    // Only mark busy if both currently booked and accepted that booking
+    const isBusy = !!(item.hasAcceptedBooking || item.isBookedAndAccepted);
+    const isAvailable = !isBusy;
     const servicesList = Array.isArray(item.services) ? item.services : [];
+
+    const photoUri = item.photoUrl
+      ? (item.photoUrl.startsWith('http') ? item.photoUrl : `${API_BASE}${item.photoUrl}`)
+      : (item._id ? `${API_BASE}/api/babysitter/photo/${item._id}` : null);
+
+    const navigateToDetails = () => {
+      navigation.navigate('CaregiverDetails', { sitterId: item._id, sitter: item });
+    };
 
     return (
       <Card style={styles.card}>
-        <View style={[styles.cardHeader, isRTL && styles.rowRTL]}>
-          <View style={styles.avatarContainer}>
-            {item.hasProfilePhoto ? (
-              <Image 
-                source={{ uri: `https://nodejsbabysitterbookingplatformbackend.onrender.com/api/babysitter/photo/${item._id}` }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarInitials}>
-                  {(item.name || 'C').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </View>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={navigateToDetails}
+        >
+          <View style={[styles.cardHeader, isRTL && styles.rowRTL]}>
+            <CaregiverAvatar
+              uri={photoUri}
+              style={styles.avatarContainer}
+              imageStyle={styles.avatarImage}
+            />
 
-          <View style={styles.headerInfo}>
-            <View style={[styles.nameRow, isRTL && styles.rowRTL]}>
-              <Text style={styles.name}>{item.name}</Text>
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={13} color={colors.gold} />
-                <Text style={styles.ratingText}>
-                  {item.averageRating ? item.averageRating.toFixed(1) : '5.0'}
-                </Text>
+            <View style={styles.headerInfo}>
+              <View style={[styles.nameRow, isRTL && styles.rowRTL]}>
+                <Text style={styles.name}>{item.name}</Text>
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={13} color={colors.gold} />
+                  <Text style={styles.ratingText}>
+                    {item.averageRating ? item.averageRating.toFixed(1) : '5.0'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.metaRow, isRTL && styles.rowRTL]}>
+                <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+                <Text style={styles.metaText}>{item.city || 'Cairo'}</Text>
+                <Text style={styles.metaDot}>•</Text>
+                <Ionicons name="briefcase-outline" size={14} color={colors.textMuted} />
+                <Text style={styles.metaText}>{item.experience || 2}+ yrs</Text>
               </View>
             </View>
-
-            <View style={[styles.metaRow, isRTL && styles.rowRTL]}>
-              <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-              <Text style={styles.metaText}>{item.city || 'Cairo'}</Text>
-              <Text style={styles.metaDot}>•</Text>
-              <Ionicons name="briefcase-outline" size={14} color={colors.textMuted} />
-              <Text style={styles.metaText}>{item.experience || 2}+ yrs</Text>
-            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {item.bio ? (
           <Text style={[styles.bio, isRTL && styles.textRTL]} numberOfLines={2}>
@@ -146,11 +154,11 @@ export default function ExploreScreen({ navigation }) {
               variant={isAvailable ? 'available' : 'busy'} 
             />
             <Button
-              title={t('bookCaregiver')}
+              title={isAvailable ? t('bookCaregiver') : (t('viewProfile') || 'View Profile')}
               variant="plum"
               style={styles.bookButton}
               textStyle={styles.bookButtonText}
-              onPress={() => navigation.navigate('CaregiverDetails', { sitterId: item._id })}
+              onPress={navigateToDetails}
             />
           </View>
         </View>

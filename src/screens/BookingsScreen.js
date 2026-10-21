@@ -15,10 +15,11 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import CaregiverAvatar from '../components/CaregiverAvatar';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest } from '../services/api';
+import { apiRequest, API_BASE } from '../services/api';
 
 const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
@@ -128,20 +129,55 @@ export default function BookingsScreen({ navigation }) {
   });
 
   const renderBookingCard = ({ item }) => {
-    const sitterName = item.babysitter?.name || item.babysitterName || 'Caregiver';
-    const familyName = item.family?.username || item.family?.name || 'Family';
+    const sitter = item.babysitter || (typeof item.babysitterId === 'object' ? item.babysitterId : null);
+    const sitterId = sitter?._id || (typeof item.babysitterId === 'string' ? item.babysitterId : sitter?.userId);
+    const sitterName = sitter?.name || item.babysitterName || 'Caregiver';
+    const familyName = item.family?.username || item.family?.name || (typeof item.parentId === 'object' ? item.parentId?.name || item.parentId?.username : null) || 'Family';
     const otherParty = isCaregiver ? familyName : sitterName;
-    const formattedDate = item.startTime ? new Date(item.startTime).toLocaleDateString() : '';
+
+    const sitterPhotoUri = sitter?.photoUrl
+      ? (sitter.photoUrl.startsWith('http') ? sitter.photoUrl : `${API_BASE}${sitter.photoUrl}`)
+      : (sitterId ? `${API_BASE}/api/babysitter/photo/${sitterId}` : null);
+
+    const dateObj = item.startTime ? new Date(item.startTime) : (item.startAt ? new Date(item.startAt) : null);
+    const formattedDate = dateObj && !isNaN(dateObj) ? dateObj.toLocaleDateString() : '';
     const startHour = item.startTime ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     const endHour = item.endTime ? new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
     return (
       <Card style={styles.bookingCard}>
         <View style={[styles.cardTop, isRTL && styles.rowRTL]}>
-          <View>
-            <Text style={styles.participantName}>{otherParty}</Text>
-            <Text style={styles.serviceText}>{t(item.service) || item.service}</Text>
+          <View style={[styles.participantInfoRow, isRTL && styles.rowRTL]}>
+            <TouchableOpacity
+              activeOpacity={sitterId ? 0.7 : 1}
+              onPress={() => {
+                if (sitterId) {
+                  navigation.navigate('CaregiverDetails', { sitterId, sitter });
+                }
+              }}
+              style={styles.bookingAvatarWrapper}
+            >
+              <CaregiverAvatar
+                uri={sitterPhotoUri}
+                style={styles.bookingAvatar}
+                imageStyle={styles.bookingAvatarImage}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.participantTextCol}>
+              <Text style={styles.participantName}>{otherParty}</Text>
+              <Text style={styles.serviceText}>{t(item.service) || item.service}</Text>
+              {sitterId ? (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('CaregiverDetails', { sitterId, sitter })}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text style={styles.viewProfileLink}>{t('viewProfile') || 'View Profile'} →</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
+
           <Badge
             label={t(`status${item.status.charAt(0).toUpperCase() + item.status.slice(1)}`) || item.status}
             variant={item.status}
@@ -300,7 +336,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  participantInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    marginRight: 8,
+  },
+  bookingAvatarWrapper: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: '#f5eff7',
+  },
+  bookingAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  bookingAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  participantTextCol: {
+    flex: 1,
+  },
+  viewProfileLink: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: 3,
   },
   participantName: {
     fontSize: 16,

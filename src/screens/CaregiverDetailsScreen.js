@@ -7,6 +7,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -14,18 +17,22 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import CaregiverAvatar from '../components/CaregiverAvatar';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest } from '../services/api';
+import { apiRequest, API_BASE } from '../services/api';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function CaregiverDetailsScreen({ route, navigation }) {
-  const { sitterId } = route.params || {};
+  const { sitterId, sitter: initialSitter } = route.params || {};
   const { t, isRTL } = useLocale();
-  const { isAuthenticated, isFamily } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  const [sitter, setSitter] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [sitter, setSitter] = useState(initialSitter || null);
+  const [loading, setLoading] = useState(!initialSitter);
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -38,14 +45,16 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
         }
       } catch (err) {
         console.warn('Failed to load caregiver:', err.message);
-        Alert.alert(t('error'), err.message || 'Could not load caregiver details');
+        if (!sitter) {
+          Alert.alert(t('error'), err.message || 'Could not load caregiver details');
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, [sitterId]);
 
-  if (loading) {
+  if (loading && !sitter) {
     return (
       <ScreenWrapper>
         <Header showBack navigation={navigation} title={sitter?.name} />
@@ -68,14 +77,27 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
     );
   }
 
-  const isAvailable = !!sitter.isAvailable;
+  // Only put the busy status if they are both currently booked and accepted that booking
+  const isBusy = !!(sitter.hasAcceptedBooking || sitter.isBookedAndAccepted);
+  const isAvailable = !isBusy;
   const servicesList = Array.isArray(sitter.services) ? sitter.services : [];
 
+  const photoUri = sitter.photoUrl
+    ? (sitter.photoUrl.startsWith('http') ? sitter.photoUrl : `${API_BASE}${sitter.photoUrl}`)
+    : (sitter._id ? `${API_BASE}/api/babysitter/photo/${sitter._id}` : null);
+
   const handleBookNow = () => {
+    if (isBusy) {
+      Alert.alert(
+        t('unavailable'),
+        isRTL ? 'هذه الجليسة مشغولة حالياً بحجز مؤكد.' : 'This caregiver is currently booked and unavailable.'
+      );
+      return;
+    }
     if (!isAuthenticated) {
       Alert.alert(
         t('login'),
-        'Please sign in with a family account to book this caregiver.',
+        isRTL ? 'يرجى تسجيل الدخول بحساب عائلة لحجز الجليسة.' : 'Please sign in with a family account to book this caregiver.',
         [
           { text: t('close'), style: 'cancel' },
           { text: t('login'), onPress: () => navigation.navigate('ProfileTab') },
@@ -92,20 +114,29 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.profileCard}>
           <View style={styles.avatarSection}>
-            <View style={styles.avatarWrapper}>
-              {sitter.hasProfilePhoto ? (
-                <Image
-                  source={{ uri: `https://nodejsbabysitterbookingplatformbackend.onrender.com/api/babysitter/photo/${sitter._id}` }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <Text style={styles.avatarInitials}>
-                    {(sitter.name || 'C').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setPhotoModalVisible(true)}
+              style={styles.avatarWrapper}
+            >
+              <CaregiverAvatar
+                uri={photoUri}
+                style={styles.avatarImage}
+                imageStyle={styles.avatarImage}
+              />
+              <View style={styles.zoomBadge}>
+                <Ionicons name="expand" size={13} color={colors.white} />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setPhotoModalVisible(true)}
+              style={styles.enlargeHintBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="search" size={12} color={colors.primary} />
+              <Text style={styles.enlargeHintText}>{t('tapToEnlarge') || 'Tap photo to enlarge'}</Text>
+            </TouchableOpacity>
 
             <Text style={styles.name}>{sitter.name}</Text>
             <Text style={styles.city}>{sitter.city || 'Cairo, Egypt'}</Text>
@@ -167,14 +198,47 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
         {/* Booking CTA Button */}
         <View style={styles.ctaContainer}>
           <Button
-            title={t('bookCaregiver')}
-            variant="plum"
+            title={isAvailable ? t('bookCaregiver') : t('unavailable')}
+            variant={isAvailable ? 'plum' : 'outline'}
             onPress={handleBookNow}
-            icon={<Ionicons name="calendar-outline" size={18} color={colors.white} />}
+            disabled={!isAvailable}
+            icon={<Ionicons name="calendar-outline" size={18} color={isAvailable ? colors.white : colors.textMuted} />}
             style={styles.ctaButton}
           />
         </View>
       </ScrollView>
+
+      {/* Full-Screen Photo Modal */}
+      <Modal
+        visible={photoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPhotoModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setPhotoModalVisible(false)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Ionicons name="close-circle" size={36} color="#ffffff" />
+          </TouchableOpacity>
+
+          <View style={styles.modalContent}>
+            <View style={styles.modalImageCard}>
+              <CaregiverAvatar
+                uri={photoUri}
+                style={styles.modalAvatarContainer}
+                imageStyle={styles.modalImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.modalSitterName}>{sitter.name}</Text>
+            <Text style={styles.modalSitterCity}>{sitter.city || 'Cairo, Egypt'}</Text>
+          </View>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -208,29 +272,47 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatarWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    overflow: 'hidden',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     borderWidth: 3,
     borderColor: colors.primary,
-    marginBottom: 10,
+    marginBottom: 6,
+    position: 'relative',
+    backgroundColor: '#f5eff7',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 45,
   },
-  avatarFallback: {
-    width: '100%',
-    height: '100%',
+  zoomBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
     backgroundColor: colors.plum,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
-  avatarInitials: {
-    fontSize: 34,
-    color: colors.white,
-    fontWeight: '800',
+  enlargeHintBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: radius.pill,
+    backgroundColor: '#f3e8f4',
+  },
+  enlargeHintText: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: '600',
   },
   name: {
     fontSize: 20,
@@ -334,5 +416,60 @@ const styles = StyleSheet.create({
   },
   textRTL: {
     textAlign: 'right',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(10, 5, 15, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 25,
+    zIndex: 10,
+  },
+  modalContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  modalImageCard: {
+    width: Math.min(SCREEN_WIDTH - 40, 320),
+    height: Math.min(SCREEN_WIDTH - 40, 320),
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: spacing.md,
+  },
+  modalAvatarContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f5eff7',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalSitterName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  modalSitterCity: {
+    fontSize: 14,
+    color: '#e7dbe9',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

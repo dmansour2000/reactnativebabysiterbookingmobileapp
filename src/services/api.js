@@ -20,8 +20,9 @@ export async function apiRequest(endpoint, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (token && !headers['x-auth-token']) {
-    headers['x-auth-token'] = token;
+  if (token) {
+    if (!headers['x-auth-token']) headers['x-auth-token'] = token;
+    if (!headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
   }
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
