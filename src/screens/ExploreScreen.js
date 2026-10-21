@@ -182,6 +182,8 @@ export default function ExploreScreen({ navigation }) {
             onChangeText={setSearch}
             onSubmitEditing={fetchSitters}
             returnKeyType="search"
+            autoCorrect={false}
+            spellCheck={false}
           />
           {search ? (
             <TouchableOpacity onPress={() => { setSearch(''); fetchSitters(); }}>

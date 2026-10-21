@@ -11,12 +11,15 @@ export default function Input({
   secureTextEntry,
   keyboardType = 'default',
   autoCapitalize = 'none',
+  autoCorrect = false,
+  spellCheck = false,
   multiline = false,
   numberOfLines = 1,
   error,
   required = false,
   style,
   inputStyle,
+  ...rest
 }) {
   const { isRTL } = useLocale();
 
@@ -35,16 +38,19 @@ export default function Input({
           isRTL && styles.inputRTL,
           inputStyle,
         ]}
-        value={value}
+        value={value != null ? String(value) : ''}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textLight}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        spellCheck={spellCheck}
         multiline={multiline}
         numberOfLines={numberOfLines}
-        textAlign={isRTL ? 'right' : 'left'}
+        blurOnSubmit={!multiline}
+        {...rest}
       />
       {error ? <Text style={[styles.errorText, isRTL && styles.textRTL]}>{error}</Text> : null}
     </View>
