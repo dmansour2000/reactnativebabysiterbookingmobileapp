@@ -40,9 +40,9 @@ A cross-platform React Native (Expo) mobile application for **CareNest**, matchi
   - Language can be toggled at any time between **العربية** and **English** using the dedicated language switcher button directly inside the Side Menu.
 
 - **Backend API Integration:**
-  - Preconfigured to communicate with the deployed Express API:
+  - Fully integrated with the live CareNest backend:
     `https://nodejsbabysitterbookingplatformbackend.onrender.com`
-  - In-app server URL configurator under **Profile > App Settings > Backend API Server** for easy switching to `http://localhost:5170` or local network IP.
+  - All network requests automatically authenticate with JWT tokens via `x-auth-token` headers.
 
 ---
 

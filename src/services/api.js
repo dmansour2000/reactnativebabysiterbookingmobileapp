@@ -1,29 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const DEFAULT_API_BASE = 'https://nodejsbabysitterbookingplatformbackend.onrender.com';
+export const API_BASE = 'https://nodejsbabysitterbookingplatformbackend.onrender.com';
 
-export async function getApiBaseUrl() {
-  try {
-    const custom = await AsyncStorage.getItem('@carenest_api_base');
-    if (custom && custom.trim()) {
-      return custom.trim().replace(/\/+$/, '');
-    }
-  } catch (e) {}
-  return DEFAULT_API_BASE;
-}
-
-export async function setApiBaseUrl(url) {
-  try {
-    if (!url || !url.trim()) {
-      await AsyncStorage.removeItem('@carenest_api_base');
-    } else {
-      await AsyncStorage.setItem('@carenest_api_base', url.trim().replace(/\/+$/, ''));
-    }
-  } catch (e) {}
+export function getApiBaseUrl() {
+  return API_BASE;
 }
 
 export async function apiRequest(endpoint, options = {}) {
-  const baseUrl = await getApiBaseUrl();
+  const baseUrl = API_BASE;
   const token = await AsyncStorage.getItem('@carenest_token');
 
   const headers = {

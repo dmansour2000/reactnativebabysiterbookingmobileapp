@@ -19,7 +19,7 @@ import Input from '../components/Input';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest, getApiBaseUrl, setApiBaseUrl } from '../services/api';
+import { apiRequest } from '../services/api';
 
 export default function ProfileScreen({ navigation }) {
   const { t, locale, setLocale, isRTL } = useLocale();
@@ -40,10 +40,6 @@ export default function ProfileScreen({ navigation }) {
   const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
-
-  // Server URL Modal
-  const [serverModal, setServerModal] = useState(false);
-  const [serverUrl, setServerUrl] = useState('');
 
   const handleToggleAvailability = async (val) => {
     setIsAvailable(val);
@@ -98,18 +94,6 @@ export default function ProfileScreen({ navigation }) {
     } finally {
       setSavingEmail(false);
     }
-  };
-
-  const handleOpenServerModal = async () => {
-    const current = await getApiBaseUrl();
-    setServerUrl(current);
-    setServerModal(true);
-  };
-
-  const handleSaveServerUrl = async () => {
-    await setApiBaseUrl(serverUrl);
-    setServerModal(false);
-    Alert.alert(t('success'), 'API Base URL updated.');
   };
 
   const handleLogout = () => {
@@ -233,15 +217,6 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.menuItemText}>{t('language')}</Text>
             <Text style={styles.settingValueText}>{locale === 'en' ? 'English' : 'العربية'}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.menuItem, isRTL && styles.rowRTL]}
-            onPress={handleOpenServerModal}
-          >
-            <Ionicons name="server-outline" size={20} color={colors.plum} />
-            <Text style={styles.menuItemText}>Backend API Server</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
-          </TouchableOpacity>
         </Card>
 
         {isAuthenticated && (
@@ -320,31 +295,6 @@ export default function ProfileScreen({ navigation }) {
               variant="plum"
               onPress={handleSaveEmail}
               loading={savingEmail}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* API Server Modal */}
-      <Modal visible={serverModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={[styles.modalHeader, isRTL && styles.rowRTL]}>
-              <Text style={styles.modalTitle}>Configure API Server</Text>
-              <TouchableOpacity onPress={() => setServerModal(false)}>
-                <Ionicons name="close-circle" size={26} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <Input
-              label="Backend Endpoint URL"
-              value={serverUrl}
-              onChangeText={setServerUrl}
-              placeholder="https://..."
-            />
-            <Button
-              title={t('saveChanges')}
-              variant="plum"
-              onPress={handleSaveServerUrl}
             />
           </View>
         </View>
