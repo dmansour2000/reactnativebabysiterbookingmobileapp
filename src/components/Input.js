@@ -54,6 +54,7 @@ export default function Input({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
+    width: '100%',
   },
   label: {
     fontSize: 13,
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 14,
     color: colors.text,
+    width: '100%',
   },
   inputRTL: {
     textAlign: 'right',
