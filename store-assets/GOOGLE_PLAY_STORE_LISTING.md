@@ -96,7 +96,7 @@ Download CareNest today and experience trusted, professional family care at your
 - **Target Audience**: Families, Parents, Adults (18+)
 - **Developer / Contact Email**: `dinamansour2000@gmail.com`
 - **Official Website**: `https://dmansour2000.github.io`
-- **Privacy Policy URL**: `https://dmansour2000.github.io/#/policies`
+- **Privacy Policy URL**: `https://dmansour2000.github.io/#/privacy` (or `https://dmansour2000.github.io/#/policies`)
 
 ---
 
