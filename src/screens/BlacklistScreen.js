@@ -166,11 +166,6 @@ export default function BlacklistScreen() {
       return;
     }
 
-    if (!photo) {
-      Alert.alert(t('error'), t('photoRequiredNotice'));
-      return;
-    }
-
     if (!incidentDescription.trim() || incidentDescription.trim().length < 10) {
       Alert.alert(
         t('error'),
@@ -194,12 +189,14 @@ export default function BlacklistScreen() {
       formData.append('incidentDate', incidentDate);
       if (phone.trim()) formData.append('phone', phone.trim());
 
-      // Caregiver Photo (Required)
-      formData.append('photo', {
-        uri: photo.uri,
-        name: photo.name || 'caregiver.jpg',
-        type: photo.type || 'image/jpeg',
-      });
+      // Caregiver Photo (Optional)
+      if (photo) {
+        formData.append('photo', {
+          uri: photo.uri,
+          name: photo.name || 'caregiver.jpg',
+          type: photo.type || 'image/jpeg',
+        });
+      }
 
       // Verification Documents (Max 2)
       documents.slice(0, 2).forEach((doc, idx) => {
@@ -357,10 +354,10 @@ export default function BlacklistScreen() {
                 </View>
               </View>
 
-              {/* 1. Caregiver Photo Upload (Required) */}
+              {/* 1. Caregiver Photo Upload (Optional) */}
               <View style={styles.uploadBlock}>
                 <Text style={[styles.uploadSectionLabel, isRTL && styles.textRTL]}>
-                  {t('caregiverPhoto')} <Text style={styles.requiredStar}>*</Text>
+                  {t('caregiverPhoto')} <Text style={styles.optionalHint}>({isArabic ? 'اختياري' : 'Optional'})</Text>
                 </Text>
 
                 {photo ? (
@@ -621,6 +618,11 @@ const styles = StyleSheet.create({
   },
   requiredStar: {
     color: colors.danger,
+  },
+  optionalHint: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.textMuted,
   },
   uploadSectionSubtitle: {
     fontSize: 11,
