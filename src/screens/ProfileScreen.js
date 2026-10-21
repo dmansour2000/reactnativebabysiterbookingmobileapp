@@ -164,14 +164,14 @@ export default function ProfileScreen({ navigation }) {
               <View style={[styles.userHeader, isRTL && styles.rowRTL]}>
                 <View style={styles.avatarBadge}>
                   <Text style={styles.avatarLetter}>
-                    {(user?.username || user?.name || 'U').charAt(0).toUpperCase()}
+                    {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.username}>{user?.username || user?.name}</Text>
+                  <Text style={styles.username}>{user?.name || user?.username}</Text>
                   <Text style={styles.userEmail}>{user?.email}</Text>
                   <Badge
-                    label={user?.role?.toUpperCase() || 'USER'}
+                    label={user?.name || user?.username || (user?.role === 'babysitter' ? t('babysitter') : t('user'))}
                     variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
                     style={styles.roleBadge}
                   />

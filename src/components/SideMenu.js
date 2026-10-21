@@ -200,18 +200,18 @@ export default function SideMenu({ navigation }) {
                 <View style={[styles.userRow, isRTL && styles.rowRTL]}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarLetter}>
-                      {(user?.username || user?.name || 'U').charAt(0).toUpperCase()}
+                      {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.userDetails}>
                     <Text style={[styles.userName, isRTL && styles.textRTL]} numberOfLines={1}>
-                      {user?.username || user?.name}
+                      {user?.name || user?.username}
                     </Text>
                     <Text style={[styles.userEmail, isRTL && styles.textRTL]} numberOfLines={1}>
                       {user?.email}
                     </Text>
                     <Badge
-                      label={user?.role === 'babysitter' ? t('babysitter') : t('user')}
+                      label={user?.name || user?.username || (user?.role === 'babysitter' ? t('babysitter') : t('user'))}
                       variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
                       style={styles.rolePill}
                     />
