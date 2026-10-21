@@ -47,7 +47,11 @@ export default function ForgotPasswordScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header showBack navigation={navigation} title={t('forgotPassword')} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Card style={styles.card}>
           <Text style={[styles.title, isRTL && styles.textRTL]}>{t('forgotPassword')}</Text>
 

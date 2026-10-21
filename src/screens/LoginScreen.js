@@ -45,12 +45,17 @@ export default function LoginScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header title={t('login')} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Card style={styles.card}>
           <Text style={[styles.title, isRTL && styles.textRTL]}>{t('login')}</Text>
           <Text style={[styles.subtitle, isRTL && styles.textRTL]}>{t('welcome')}</Text>
 
           <Input
+            key="login-identifier"
             label={t('email') + ' / ' + t('username')}
             value={identifier}
             onChangeText={setIdentifier}
@@ -60,6 +65,7 @@ export default function LoginScreen({ navigation }) {
           />
 
           <Input
+            key="login-password"
             label={t('password')}
             value={password}
             onChangeText={setPassword}

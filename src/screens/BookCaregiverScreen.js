@@ -90,7 +90,11 @@ export default function BookCaregiverScreen({ route, navigation }) {
   return (
     <ScreenWrapper>
       <Header showBack navigation={navigation} title={t('bookCaregiver')} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Card>
           <View style={[styles.sitterHeaderRow, isRTL && styles.rowRTL]}>
             <CaregiverAvatar

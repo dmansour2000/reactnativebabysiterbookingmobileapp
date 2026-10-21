@@ -1,26 +1,31 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { StyleSheet, View, Text, TextInput } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 
-export default function Input({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  secureTextEntry,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
-  autoCorrect = false,
-  spellCheck = false,
-  multiline = false,
-  numberOfLines = 1,
-  error,
-  required = false,
-  style,
-  inputStyle,
-  ...rest
-}) {
+const Input = forwardRef(function Input(
+  {
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    secureTextEntry,
+    keyboardType = 'default',
+    autoCapitalize = 'none',
+    autoCorrect = false,
+    spellCheck = false,
+    multiline = false,
+    numberOfLines = 1,
+    error,
+    required = false,
+    style,
+    inputStyle,
+    textContentType,
+    autoComplete = 'off',
+    ...rest
+  },
+  ref
+) {
   const { isRTL } = useLocale();
 
   return (
@@ -31,6 +36,7 @@ export default function Input({
         </Text>
       )}
       <TextInput
+        ref={ref}
         style={[
           styles.input,
           multiline && styles.multilineInput,
@@ -50,12 +56,17 @@ export default function Input({
         multiline={multiline}
         numberOfLines={numberOfLines}
         blurOnSubmit={!multiline}
+        autoComplete={autoComplete}
+        textContentType={textContentType || (secureTextEntry ? 'password' : 'none')}
+        importantForAutofill="no"
         {...rest}
       />
       {error ? <Text style={[styles.errorText, isRTL && styles.textRTL]}>{error}</Text> : null}
     </View>
   );
-}
+});
+
+export default Input;
 
 const styles = StyleSheet.create({
   container: {

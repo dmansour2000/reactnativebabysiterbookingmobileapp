@@ -39,6 +39,8 @@ export default function ContactUsScreen({ navigation }) {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* Intro */}
         <Card style={styles.introCard}>

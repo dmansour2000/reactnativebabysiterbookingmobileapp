@@ -119,7 +119,11 @@ export default function RegisterScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header title={t('register')} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Card style={styles.card}>
           <Text style={[styles.title, isRTL && styles.textRTL]}>{t('createAccount')}</Text>
 
@@ -146,8 +150,9 @@ export default function RegisterScreen({ navigation }) {
 
           {role === 'user' ? (
             /* Family Registration */
-            <>
+            <View key="family-form-fields">
               <Input
+                key="reg-family-username"
                 label={t('username')}
                 value={username}
                 onChangeText={setUsername}
@@ -155,6 +160,7 @@ export default function RegisterScreen({ navigation }) {
                 required
               />
               <Input
+                key="reg-family-email"
                 label={t('email')}
                 value={email}
                 onChangeText={setEmail}
@@ -163,6 +169,7 @@ export default function RegisterScreen({ navigation }) {
                 required
               />
               <Input
+                key="reg-family-password"
                 label={t('password')}
                 value={password}
                 onChangeText={setPassword}
@@ -170,11 +177,12 @@ export default function RegisterScreen({ navigation }) {
                 secureTextEntry
                 required
               />
-            </>
+            </View>
           ) : (
             /* Caregiver Registration */
-            <>
+            <View key="caregiver-form-fields">
               <Input
+                key="reg-caregiver-name"
                 label={t('fullName')}
                 value={name}
                 onChangeText={setName}
@@ -182,6 +190,7 @@ export default function RegisterScreen({ navigation }) {
                 required
               />
               <Input
+                key="reg-caregiver-email"
                 label={t('email')}
                 value={email}
                 onChangeText={setEmail}
@@ -190,6 +199,7 @@ export default function RegisterScreen({ navigation }) {
                 required
               />
               <Input
+                key="reg-caregiver-password"
                 label={t('password')}
                 value={password}
                 onChangeText={setPassword}
@@ -263,7 +273,7 @@ export default function RegisterScreen({ navigation }) {
                 multiline
                 numberOfLines={3}
               />
-            </>
+            </View>
           )}
 
           <Button

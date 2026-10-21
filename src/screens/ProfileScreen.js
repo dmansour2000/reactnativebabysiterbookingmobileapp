@@ -111,7 +111,11 @@ export default function ProfileScreen({ navigation }) {
     <ScreenWrapper>
       <Header title={t('profile')} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {isAuthenticated ? (
           <>
             {/* Account Card */}
