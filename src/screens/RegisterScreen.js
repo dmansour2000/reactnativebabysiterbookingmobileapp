@@ -57,7 +57,7 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = async () => {
     if (!email.includes('@') || password.length < 8) {
-      Alert.alert(t('error'), 'Please enter a valid email and a password of at least 8 characters.');
+      Alert.alert(t('error'), t('validEmailPasswordPrompt'));
       return;
     }
 
@@ -65,14 +65,14 @@ export default function RegisterScreen({ navigation }) {
     try {
       if (role === 'user') {
         if (!username.trim()) {
-          Alert.alert(t('error'), 'Please enter a username.');
+          Alert.alert(t('error'), t('enterUsernamePrompt'));
           setLoading(false);
           return;
         }
         await registerFamily({ username, email, password });
       } else {
         if (!name.trim() || !phone.trim() || !nationalId.trim()) {
-          Alert.alert(t('error'), 'Please fill in all caregiver identity fields.');
+          Alert.alert(t('error'), t('fillCaregiverFieldsPrompt'));
           setLoading(false);
           return;
         }

@@ -90,14 +90,14 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
     if (isBusy) {
       Alert.alert(
         t('unavailable'),
-        isRTL ? 'هذه الجليسة مشغولة حالياً بحجز مؤكد.' : 'This caregiver is currently booked and unavailable.'
+        t('caregiverCurrentlyBooked')
       );
       return;
     }
     if (!isAuthenticated) {
       Alert.alert(
         t('login'),
-        isRTL ? 'يرجى تسجيل الدخول بحساب عائلة لحجز الجليسة.' : 'Please sign in with a family account to book this caregiver.',
+        t('loginToBookNotice'),
         [
           { text: t('close'), style: 'cancel' },
           { text: t('login'), onPress: () => navigation.navigate('ProfileTab') },
@@ -148,7 +148,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
               />
               <View style={styles.verifiedPill}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                <Text style={styles.verifiedText}>Verified</Text>
+                <Text style={styles.verifiedText}>{t('verified')}</Text>
               </View>
             </View>
           </View>
@@ -163,7 +163,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{sitter.experience || 2}+ Yrs</Text>
+              <Text style={styles.statValue}>{sitter.experience || 2}+ {t('years')}</Text>
               <Text style={styles.statLabel}>{t('experienceYears')}</Text>
             </View>
             <View style={styles.statDivider} />

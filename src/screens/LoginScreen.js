@@ -27,7 +27,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password) {
-      Alert.alert(t('error'), 'Please enter your email/username and password.');
+      Alert.alert(t('error'), t('enterCredentialsPrompt'));
       return;
     }
 

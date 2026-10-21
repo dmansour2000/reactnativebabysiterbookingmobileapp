@@ -43,7 +43,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
 
   const handleBookingSubmit = async () => {
     if (!address.trim()) {
-      Alert.alert(t('error'), 'Please enter your service address');
+      Alert.alert(t('error'), t('pleaseEnterAddress'));
       return;
     }
 
@@ -69,13 +69,13 @@ export default function BookCaregiverScreen({ route, navigation }) {
         t('bookingSuccess'),
         [
           {
-            text: 'View Bookings',
+            text: t('viewMyBookings'),
             onPress: () => navigation.navigate('BookingsTab'),
           },
         ]
       );
     } catch (err) {
-      Alert.alert(t('error'), err.message || 'Failed to submit booking');
+      Alert.alert(t('error'), err.message || t('bookingSubmitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -101,7 +101,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
             <View style={styles.headerTextCol}>
               <Text style={[styles.heading, isRTL && styles.textRTL]}>{t('bookingDetails')}</Text>
               <Text style={[styles.subheading, isRTL && styles.textRTL]}>
-                {isRTL ? 'حجز مع ' : 'Booking with '}<Text style={styles.boldText}>{sitter?.name}</Text>
+                {t('bookingWith')} <Text style={styles.boldText}>{sitter?.name}</Text>
               </Text>
             </View>
           </View>
@@ -160,7 +160,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
             label={t('address')}
             value={address}
             onChangeText={setAddress}
-            placeholder="Street, Building, Apartment, City"
+            placeholder={t('addressPlaceholder')}
             multiline
             numberOfLines={2}
             required
@@ -171,7 +171,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
             label={t('notes')}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Child age, allergies, special instructions..."
+            placeholder={t('bookingNotesPlaceholder')}
             multiline
             numberOfLines={3}
           />
@@ -183,7 +183,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
               {Number(monthlySalary).toLocaleString()} {currency} {t('perMonth')}
             </Text>
             <Text style={styles.costDisclaimer}>
-              {t('estimatedCost')}: ~ {totalCost} {currency} ({durationHours} hrs)
+              {t('estimatedCost')}: ~ {totalCost} {currency} ({durationHours} {t('hours')})
             </Text>
           </View>
 

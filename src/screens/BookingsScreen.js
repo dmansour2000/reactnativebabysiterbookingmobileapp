@@ -64,7 +64,7 @@ export default function BookingsScreen({ navigation }) {
   const handleCancelBooking = (bookingId) => {
     Alert.alert(
       t('cancelBooking'),
-      'Are you sure you want to cancel this booking?',
+      t('confirmCancelBooking'),
       [
         { text: t('close'), style: 'cancel' },
         {
@@ -80,7 +80,7 @@ export default function BookingsScreen({ navigation }) {
                 }),
               });
               fetchBookings();
-              Alert.alert(t('success'), 'Booking cancelled.');
+              Alert.alert(t('success'), t('bookingCancelledSuccess'));
             } catch (err) {
               Alert.alert(t('error'), err.message || 'Failed to cancel');
             }
@@ -96,7 +96,7 @@ export default function BookingsScreen({ navigation }) {
         method: 'PUT',
       });
       fetchBookings();
-      Alert.alert(t('success'), 'Booking accepted!');
+      Alert.alert(t('success'), t('bookingAcceptedSuccess'));
     } catch (err) {
       Alert.alert(t('error'), err.message || 'Failed to accept booking');
     }
@@ -110,7 +110,7 @@ export default function BookingsScreen({ navigation }) {
           <Ionicons name="calendar-outline" size={54} color={colors.plum} />
           <Text style={styles.unauthTitle}>{t('myBookings')}</Text>
           <Text style={styles.unauthDesc}>
-            Please sign in to view and manage your scheduled appointments.
+            {t('bookingsSignInPrompt')}
           </Text>
           <Button
             title={t('login')}
@@ -259,7 +259,7 @@ export default function BookingsScreen({ navigation }) {
                     selectedStatus === item && styles.tabChipTextActive,
                   ]}
                 >
-                  {item === 'all' ? 'All' : t(`status${item.charAt(0).toUpperCase() + item.slice(1)}`)}
+                  {item === 'all' ? t('all') : t(`status${item.charAt(0).toUpperCase() + item.slice(1)}`)}
                 </Text>
               </TouchableOpacity>
             )}

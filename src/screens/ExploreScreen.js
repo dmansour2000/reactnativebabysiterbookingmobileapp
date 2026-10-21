@@ -212,7 +212,7 @@ export default function ExploreScreen({ navigation }) {
                   styles.filterChipText,
                   selectedCity === item && styles.filterChipTextActive
                 ]}>
-                  {item === 'All' ? t('allCities') : item}
+                  {item === 'All' ? t('allCities') : (t(item) || item)}
                 </Text>
               </TouchableOpacity>
             )}
