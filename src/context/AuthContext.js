@@ -45,8 +45,23 @@ export const AuthProvider = ({ children }) => {
               await logout();
               return;
             }
+            let sitterPhoto = freshUser.photoUrl;
+            let sitterName = freshUser.name;
+            if (freshUser.role === 'babysitter') {
+              try {
+                const sitterProf = await apiRequest('/api/babysitter/profile', {
+                  headers: { 'x-auth-token': storedToken }
+                });
+                if (sitterProf) {
+                  if (sitterProf.photoUrl) sitterPhoto = sitterProf.photoUrl;
+                  if (sitterProf.name) sitterName = sitterProf.name;
+                }
+              } catch (_) {}
+            }
             const normalized = {
               ...freshUser,
+              name: sitterName || freshUser.name || freshUser.username,
+              photoUrl: sitterPhoto || freshUser.photoUrl,
               id: freshUser.id || freshUser._id,
             };
             setUser(normalized);
@@ -183,6 +198,15 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const updateUserLocal = async (partial) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      AsyncStorage.setItem('@carenest_user', JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -199,6 +223,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       changePassword,
       changeEmail,
+      updateUserLocal,
       refreshUser: restoreSession
     }}>
       {children}

@@ -25,16 +25,48 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
 
 export default function SideMenu({ navigation }) {
   const { t, locale, setLocale, isRTL } = useLocale();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, token, isAuthenticated, logout } = useAuth();
   const { isOpen, closeDrawer, currentScreen, navigateTo } = useDrawer();
+  const isArabic = locale === 'ar';
 
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [caregiverInfo, setCaregiverInfo] = useState({ name: '', photoUrl: '' });
 
-  const displayName = user?.name || user?.username || 'User';
-  const photoUri = user?.photoUrl
-    ? (user.photoUrl.startsWith('http') ? user.photoUrl : `${API_BASE}${user.photoUrl}`)
-    : null;
+  useEffect(() => {
+    setPhotoError(false);
+    if (isOpen && isAuthenticated && user?.role === 'babysitter') {
+      apiRequest('/api/babysitter/profile')
+        .then((prof) => {
+          if (prof) {
+            setCaregiverInfo({
+              name: prof.name || '',
+              photoUrl: prof.photoUrl || '',
+            });
+            setPhotoError(false);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, isAuthenticated, user]);
+
+  const caregiverDisplayName = caregiverInfo.name || user?.name || '';
+  const displayName = user?.role === 'babysitter'
+    ? (caregiverDisplayName || (user?.username && !user.username.startsWith('google-user') ? user.username : '') || t('caregiver') || 'Caregiver')
+    : (user?.name || user?.username || 'User');
+
+  const rawPhoto = (user?.role === 'babysitter' ? (caregiverInfo.photoUrl || user?.photoUrl) : user?.photoUrl);
+  let photoUri = null;
+  if (rawPhoto) {
+    if (rawPhoto.startsWith('file://') || rawPhoto.startsWith('content://') || rawPhoto.startsWith('http')) {
+      photoUri = rawPhoto;
+    } else {
+      photoUri = `${API_BASE}${rawPhoto.startsWith('/') ? '' : '/'}${rawPhoto}`;
+    }
+    if (token && !photoUri.includes('token=')) {
+      photoUri += `${photoUri.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    }
+  }
 
   // Animation values - always slide from left (-DRAWER_WIDTH to 0)
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -211,10 +243,21 @@ export default function SideMenu({ navigation }) {
             {/* User Account / Guest Snippet */}
             <View style={styles.userCard}>
               {isAuthenticated ? (
-                <View style={[styles.userRow, isRTL && styles.rowRTL]}>
+                <TouchableOpacity
+                  style={[styles.userRow, isRTL && styles.rowRTL]}
+                  activeOpacity={0.75}
+                  onPress={() => handleNav('Profile')}
+                >
                   {!photoError && photoUri ? (
                     <Image
-                      source={{ uri: photoUri }}
+                      key={photoUri}
+                      source={{
+                        uri: photoUri,
+                        headers: token ? {
+                          Authorization: `Bearer ${token}`,
+                          'x-auth-token': token,
+                        } : undefined,
+                      }}
                       style={styles.avatarPhoto}
                       onError={() => setPhotoError(true)}
                     />
@@ -232,8 +275,16 @@ export default function SideMenu({ navigation }) {
                     <Text style={[styles.userEmail, isRTL && styles.textRTL]} numberOfLines={1}>
                       {user?.email}
                     </Text>
+                    {user?.role === 'babysitter' && (
+                      <View style={[styles.roleBadge, isRTL && styles.rowRTL]}>
+                        <Ionicons name="sparkles" size={11} color="#f1a2d2" />
+                        <Text style={styles.roleBadgeText}>
+                          {t('caregiver') || t('babysitterRole') || (isArabic ? 'جليسة أطفال' : 'Caregiver')}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                </View>
+                </TouchableOpacity>
               ) : (
                 <View style={styles.guestBox}>
                   <Text style={[styles.guestTitle, isRTL && styles.textRTL]}>{t('welcome')}</Text>
@@ -471,6 +522,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
     marginTop: 2,
+  },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(217, 84, 178, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(217, 84, 178, 0.4)',
+  },
+  roleBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#f1a2d2',
   },
   guestBox: {
     paddingVertical: 4,

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import { colors } from '../theme';
 
 export default function CaregiverAvatar({
   uri,
+  headers,
   name,
   style,
   imageStyle,
@@ -14,14 +15,22 @@ export default function CaregiverAvatar({
 }) {
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
+
   const initial = (name || 'C').charAt(0).toUpperCase();
   const showImage = !hasError && Boolean(uri);
 
   const renderInner = () => {
     if (showImage) {
+      const imageSource = typeof uri === 'string'
+        ? (headers ? { uri, headers } : { uri })
+        : uri;
+
       return (
         <Image
-          source={{ uri }}
+          source={imageSource}
           style={[styles.image, imageStyle]}
           resizeMode={resizeMode}
           onError={() => setHasError(true)}

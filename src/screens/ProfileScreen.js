@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +24,8 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest, API_BASE } from '../services/api';
 import NotificationsModal from '../components/NotificationsModal';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const NATIONALITY_OPTIONS = [
   'Egypt',
   'Sudan',
@@ -36,8 +39,11 @@ const NATIONALITY_OPTIONS = [
 
 export default function ProfileScreen({ navigation, route }) {
   const { t, locale, setLocale, isRTL } = useLocale();
-  const { user, isAuthenticated, isCaregiver, logout, changePassword, changeEmail, refreshUser } = useAuth();
+  const { user, token, isAuthenticated, isCaregiver, logout, changePassword, changeEmail, refreshUser, updateUserLocal } = useAuth();
   const isArabic = locale === 'ar';
+
+  // Photo viewer modal
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
   // Edit Profile Modal
   const [editModal, setEditModal] = useState(false);
@@ -119,12 +125,19 @@ export default function ProfileScreen({ navigation, route }) {
               }
               if (prof.photoUrl) {
                 setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : prof.photoUrl));
+                setPhotoError(false);
               }
               if (prof.available !== undefined) {
                 setIsAvailable(prof.available);
               }
               const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
               setExistingDocsCount(count);
+              if (typeof updateUserLocal === 'function' && (prof.name || prof.photoUrl)) {
+                updateUserLocal({
+                  name: prof.name || user?.name,
+                  photoUrl: prof.photoUrl || user?.photoUrl,
+                });
+              }
             }
           })
           .catch(() => {});
@@ -135,15 +148,25 @@ export default function ProfileScreen({ navigation, route }) {
   React.useEffect(() => {
     const unsubscribe = navigation?.addListener?.('focus', () => {
       if (isAuthenticated && isCaregiver) {
+        setPhotoError(false);
         apiRequest('/api/babysitter/profile')
           .then((prof) => {
             if (prof) {
               setCaregiverProfile(prof);
               if (prof.name) setCaregiverName(prof.name);
-              if (prof.photoUrl) setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : prof.photoUrl));
+              if (prof.photoUrl) {
+                setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : prof.photoUrl));
+                setPhotoError(false);
+              }
               if (prof.available !== undefined) setIsAvailable(prof.available);
               const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
               setExistingDocsCount(count);
+              if (typeof updateUserLocal === 'function' && (prof.name || prof.photoUrl)) {
+                updateUserLocal({
+                  name: prof.name || user?.name,
+                  photoUrl: prof.photoUrl || user?.photoUrl,
+                });
+              }
             }
           })
           .catch(() => {});
@@ -459,6 +482,18 @@ export default function ProfileScreen({ navigation, route }) {
           if (docRes?.documentsCount != null) {
             setExistingDocsCount(docRes.documentsCount);
           }
+          if (typeof updateUserLocal === 'function') {
+            updateUserLocal({
+              name: editName.trim(),
+              photoUrl: newPhotoUri || docRes?.photoUrl || user?.photoUrl,
+            });
+          }
+        } else {
+          if (typeof updateUserLocal === 'function') {
+            updateUserLocal({
+              name: editName.trim(),
+            });
+          }
         }
       }
       if (typeof refreshUser === 'function') {
@@ -491,15 +526,20 @@ export default function ProfileScreen({ navigation, route }) {
     );
   };
 
-  const rawPhoto = caregiverPhoto || user?.photoUrl;
-  const photoUri = rawPhoto
-    ? (rawPhoto.startsWith('file://') || rawPhoto.startsWith('content://')
-        ? rawPhoto
-        : rawPhoto.startsWith('http')
-          ? `${rawPhoto}${rawPhoto.includes('?') ? '&' : '?'}t=${photoTimestamp}`
-          : `${API_BASE}${rawPhoto}${rawPhoto.includes('?') ? '&' : '?'}t=${photoTimestamp}`)
-    : null;
-  const caregiverDisplayName = caregiverName || user?.name || '';
+  const rawPhoto = caregiverPhoto || caregiverProfile?.photoUrl || user?.photoUrl;
+  let photoUri = null;
+  if (rawPhoto) {
+    if (rawPhoto.startsWith('file://') || rawPhoto.startsWith('content://') || rawPhoto.startsWith('http')) {
+      photoUri = rawPhoto;
+    } else {
+      photoUri = `${API_BASE}${rawPhoto.startsWith('/') ? '' : '/'}${rawPhoto}`;
+    }
+    if (token && !photoUri.includes('token=')) {
+      photoUri += `${photoUri.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    }
+    photoUri += `${photoUri.includes('?') ? '&' : '?'}t=${photoTimestamp}`;
+  }
+  const caregiverDisplayName = caregiverName || caregiverProfile?.name || user?.name || '';
   const displayName = isCaregiver
     ? (caregiverDisplayName || (user?.username && !user.username.startsWith('google-user') ? user.username : ''))
     : (user?.name || user?.username || t('userRole'));
@@ -519,12 +559,27 @@ export default function ProfileScreen({ navigation, route }) {
             <Card style={styles.userCard}>
               <View style={[styles.userHeader, isRTL && styles.rowRTL]}>
                 {!photoError && photoUri ? (
-                  <Image
-                    key={`${photoUri}_${photoTimestamp}`}
-                    source={{ uri: photoUri }}
-                    style={styles.avatarPhoto}
-                    onError={() => setPhotoError(true)}
-                  />
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setPhotoModalVisible(true)}
+                    style={styles.avatarTouchArea}
+                  >
+                    <Image
+                      key={`${photoUri}_${photoTimestamp}`}
+                      source={{
+                        uri: photoUri,
+                        headers: token ? {
+                          Authorization: `Bearer ${token}`,
+                          'x-auth-token': token,
+                        } : undefined,
+                      }}
+                      style={styles.avatarPhoto}
+                      onError={() => setPhotoError(true)}
+                    />
+                    <View style={styles.avatarZoomBadge}>
+                      <Ionicons name="expand" size={10} color="#ffffff" />
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <View style={styles.avatarBadge}>
                     <Text style={styles.avatarLetter}>
@@ -578,6 +633,83 @@ export default function ProfileScreen({ navigation, route }) {
                         ? (t('accountApprovedDesc') || 'Your profile is approved and actively visible to families on CareNest.')
                         : (t('accountPendingDesc') || 'Your account is under review by our moderation team. You can update your details or add documents anytime.')}
                     </Text>
+                  </View>
+                </View>
+
+                {/* Caregiver Photo & Identity Preview Header */}
+                <View style={[styles.caregiverPhotoHeader, isRTL && styles.rowRTL]}>
+                  <TouchableOpacity
+                    style={styles.caregiverPhotoContainer}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      if (!photoError && photoUri) {
+                        setPhotoModalVisible(true);
+                      } else {
+                        handleOpenEditProfile();
+                      }
+                    }}
+                  >
+                    {!photoError && photoUri ? (
+                      <Image
+                        key={`card_${photoUri}_${photoTimestamp}`}
+                        source={{
+                          uri: photoUri,
+                          headers: token ? {
+                            Authorization: `Bearer ${token}`,
+                            'x-auth-token': token,
+                          } : undefined,
+                        }}
+                        style={styles.caregiverCardPhoto}
+                        onError={() => setPhotoError(true)}
+                      />
+                    ) : (
+                      <View style={styles.caregiverCardPhotoFallback}>
+                        <Ionicons name="camera" size={32} color={colors.white} />
+                        <Text style={styles.uploadPhotoHintText}>
+                          {t('uploadPhoto') || (isArabic ? 'إضافة صورة' : 'Add Photo')}
+                        </Text>
+                      </View>
+                    )}
+                    {!photoError && photoUri && (
+                      <View style={styles.enlargeBadge}>
+                        <Ionicons name="expand" size={14} color="#ffffff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={[styles.caregiverPhotoInfo, isRTL && styles.alignRTL]}>
+                    <Text style={[styles.caregiverMainName, isRTL && styles.textRTL]}>
+                      {caregiverDisplayName || user?.name || user?.username}
+                    </Text>
+                    <View style={[styles.verifiedRoleTag, isRTL && styles.rowRTL]}>
+                      <Ionicons name="sparkles" size={12} color="#c026d3" />
+                      <Text style={styles.verifiedRoleTagText}>
+                        {t('caregiver') || t('babysitterRole') || (isArabic ? 'جليسة أطفال' : 'Caregiver')}
+                      </Text>
+                    </View>
+                    {!photoError && photoUri ? (
+                      <TouchableOpacity
+                        style={[styles.viewPhotoTextBtn, isRTL && styles.rowRTL]}
+                        onPress={() => setPhotoModalVisible(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="eye-outline" size={14} color={colors.primary} />
+                        <Text style={styles.viewPhotoTextBtnLabel}>
+                          {isArabic ? 'عرض الصورة بالحجم الكامل' : 'View Full Photo'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.viewPhotoTextBtn, isRTL && styles.rowRTL]}
+                        onPress={handleOpenEditProfile}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="add-circle-outline" size={14} color={colors.primary} />
+                        <Text style={styles.viewPhotoTextBtnLabel}>
+                          {isArabic ? 'إضافة صورة شخصية' : 'Add Profile Picture'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
 
@@ -920,6 +1052,55 @@ export default function ProfileScreen({ navigation, route }) {
           />
         )}
       </ScrollView>
+
+      {/* Full-Screen Caregiver Photo Modal */}
+      <Modal
+        visible={photoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPhotoModalVisible(false)}
+      >
+        <View style={styles.photoModalBackdrop}>
+          <TouchableOpacity
+            style={styles.photoModalCloseBtn}
+            onPress={() => setPhotoModalVisible(false)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Ionicons name="close-circle" size={38} color="#ffffff" />
+          </TouchableOpacity>
+
+          <View style={styles.photoModalContent}>
+            <View style={styles.photoModalImageCard}>
+              {photoUri ? (
+                <Image
+                  key={`modal_${photoUri}_${photoTimestamp}`}
+                  source={{
+                    uri: photoUri,
+                    headers: token ? {
+                      Authorization: `Bearer ${token}`,
+                      'x-auth-token': token,
+                    } : undefined,
+                  }}
+                  style={styles.photoModalFullImage}
+                  resizeMode="contain"
+                />
+              ) : null}
+            </View>
+            <Text style={styles.photoModalSitterName}>
+              {caregiverDisplayName || user?.name || user?.username}
+            </Text>
+            <Text style={styles.photoModalSitterRole}>
+              {t('caregiver') || t('babysitterRole') || (isArabic ? 'جليسة أطفال' : 'Caregiver')}
+            </Text>
+            {caregiverProfile?.city ? (
+              <Text style={styles.photoModalSitterCity}>
+                {t(caregiverProfile.city) || caregiverProfile.city}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
 
       {/* Password Modal */}
       <Modal visible={passwordModal} animationType="slide" transparent>
@@ -1266,6 +1447,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarTouchArea: {
+    position: 'relative',
+  },
+  avatarZoomBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
   avatarPhoto: {
     width: 60,
     height: 60,
@@ -1308,6 +1505,160 @@ const styles = StyleSheet.create({
   },
   caregiverProfileCard: {
     paddingVertical: spacing.md,
+  },
+  caregiverPhotoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1e5f3',
+    marginBottom: 10,
+  },
+  caregiverPhotoContainer: {
+    position: 'relative',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: colors.primary,
+    backgroundColor: '#f5eff7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  caregiverCardPhoto: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 37,
+  },
+  caregiverCardPhotoFallback: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.plum,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadPhotoHintText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  enlargeBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+  caregiverPhotoInfo: {
+    flex: 1,
+  },
+  caregiverMainName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  verifiedRoleTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fdf2f8',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#fbcfe8',
+  },
+  verifiedRoleTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#be185d',
+  },
+  viewPhotoTextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  viewPhotoTextBtnLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  photoModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 10, 20, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  photoModalCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 24,
+    zIndex: 999,
+  },
+  photoModalContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  photoModalImageCard: {
+    width: Math.min(SCREEN_WIDTH - 48, 320),
+    height: Math.min(SCREEN_WIDTH - 48, 320),
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: '#000000',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
+    marginBottom: spacing.md,
+  },
+  photoModalFullImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoModalSitterName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  photoModalSitterRole: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#f1a2d2',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  photoModalSitterCity: {
+    fontSize: 14,
+    color: '#e2d7e5',
+    marginTop: 4,
+    textAlign: 'center',
   },
   statusBanner: {
     flexDirection: 'row',
