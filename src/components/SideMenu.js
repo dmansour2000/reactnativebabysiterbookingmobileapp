@@ -33,7 +33,6 @@ export default function SideMenu({ navigation }) {
 
   useEffect(() => {
     if (isOpen) {
-      // Reset starting position before animating in (always from left)
       slideAnim.setValue(-DRAWER_WIDTH);
       fadeAnim.setValue(0);
 
@@ -49,25 +48,31 @@ export default function SideMenu({ navigation }) {
           useNativeDriver: true,
         }),
       ]).start();
+    } else {
+      slideAnim.setValue(-DRAWER_WIDTH);
+      fadeAnim.setValue(0);
     }
   }, [isOpen]);
 
   const handleClose = () => {
-    // Immediately tell the context we are closing so state updates synchronously
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }),
-    ]).start();
-    // Close modal reliably
-    closeDrawer();
+    ]).start(() => {
+      closeDrawer();
+    });
+    // Fallback: guarantee closing even if animation callback doesn't fire
+    setTimeout(() => {
+      closeDrawer();
+    }, 220);
   };
 
   const handleNav = (screenName) => {
@@ -359,12 +364,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeBtn: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 999,
   },
   userCard: {
     backgroundColor: '#272d36', // Darker grey card surface
