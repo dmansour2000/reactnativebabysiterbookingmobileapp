@@ -26,7 +26,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!email.trim() || !email.includes('@')) {
-      Alert.alert(t('error'), 'Please enter a valid email address.');
+      Alert.alert(t('error'), t('enterValidEmail') || 'Please enter a valid email address.');
       return;
     }
 
@@ -58,12 +58,12 @@ export default function ForgotPasswordScreen({ navigation }) {
           {submitted ? (
             <View style={styles.successBox}>
               <Ionicons name="mail-open-outline" size={48} color={colors.plum} />
-              <Text style={styles.successTitle}>{t('passwordRecoverySent')}</Text>
-              <Text style={styles.spamNotice}>
+              <Text style={[styles.successTitle, isRTL && styles.textRTL]}>{t('passwordRecoverySent')}</Text>
+              <Text style={[styles.spamNotice, isRTL && styles.textRTL]}>
                 {t('checkInboxSpamNotice')}
               </Text>
               <Button
-                title={t('loginHere')}
+                title={t('backToLogin')}
                 variant="plum"
                 onPress={() => navigation.navigate('Login')}
                 style={styles.backBtn}
@@ -79,7 +79,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 label={t('email')}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder') || 'you@example.com'}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 required
@@ -97,7 +97,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 style={styles.backLink}
                 onPress={() => navigation.goBack()}
               >
-                <Text style={styles.backLinkText}>{t('loginHere')}</Text>
+                <Text style={styles.backLinkText}>{t('backToLogin')}</Text>
               </TouchableOpacity>
             </>
           )}
