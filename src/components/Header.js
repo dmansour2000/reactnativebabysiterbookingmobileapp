@@ -36,9 +36,10 @@ export default function Header({
             <TouchableOpacity
               style={styles.iconButton}
               onPress={openDrawer}
-              activeOpacity={0.7}
+              hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+              activeOpacity={0.6}
             >
-              <Ionicons name="menu" size={24} color={colors.white} />
+              <Ionicons name="menu" size={26} color={colors.white} />
             </TouchableOpacity>
           )}
 

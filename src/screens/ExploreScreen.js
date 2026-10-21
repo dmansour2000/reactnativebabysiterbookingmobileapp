@@ -134,9 +134,9 @@ export default function ExploreScreen({ navigation }) {
 
         <View style={[styles.cardFooter, isRTL && styles.rowRTL]}>
           <View>
-            <Text style={styles.rateLabel}>{t('hourlyRate')}</Text>
+            <Text style={[styles.rateLabel, isRTL && styles.textRTL]}>{t('monthlySalary')}</Text>
             <Text style={styles.rateValue}>
-              {item.hourlyRate || 100} {item.currency || 'EGP'}/hr
+              {Number(item.monthlySalary != null ? item.monthlySalary : (item.hourlyRate || 7000)).toLocaleString()} {item.currency || 'EGP'} {t('perMonth')}
             </Text>
           </View>
 

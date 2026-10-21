@@ -9,6 +9,7 @@ import {
   Dimensions,
   SafeAreaView,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme';
@@ -30,39 +31,62 @@ export default function SideMenu({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const targetSlide = isOpen ? 0 : (isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH);
-    const targetFade = isOpen ? 1 : 0;
+    if (isOpen) {
+      // Reset starting position before animating in
+      slideAnim.setValue(isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH);
+      fadeAnim.setValue(0);
 
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isOpen, isRTL]);
+
+  const handleClose = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: targetSlide,
-        duration: 260,
+        toValue: isRTL ? DRAWER_WIDTH : -DRAWER_WIDTH,
+        duration: 200,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
-        toValue: targetFade,
-        duration: 260,
+        toValue: 0,
+        duration: 200,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [isOpen, isRTL]);
-
-  if (!isOpen) return null;
+    ]).start(() => {
+      closeDrawer();
+    });
+  };
 
   const handleNav = (screenName) => {
-    navigateTo(screenName, navigation);
+    handleClose();
+    setTimeout(() => {
+      navigateTo(screenName, navigation);
+    }, 150);
   };
 
   const handleLogout = () => {
-    closeDrawer();
-    Alert.alert(
-      t('logout'),
-      locale === 'ar' ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Are you sure you want to sign out?',
-      [
-        { text: t('close'), style: 'cancel' },
-        { text: t('logout'), style: 'destructive', onPress: logout },
-      ]
-    );
+    handleClose();
+    setTimeout(() => {
+      Alert.alert(
+        t('logout'),
+        locale === 'ar' ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Are you sure you want to sign out?',
+        [
+          { text: t('close'), style: 'cancel' },
+          { text: t('logout'), style: 'destructive', onPress: logout },
+        ]
+      );
+    }, 200);
   };
 
   const menuItems = [
@@ -89,200 +113,214 @@ export default function SideMenu({ navigation }) {
   ];
 
   return (
-    <View style={StyleSheet.absoluteFillObject} pointerEvents="auto">
-      {/* Semi-transparent Backdrop */}
-      <TouchableWithoutFeedback onPress={closeDrawer}>
-        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
-      </TouchableWithoutFeedback>
+    <Modal
+      visible={isOpen}
+      transparent={true}
+      animationType="none"
+      onRequestClose={handleClose}
+      statusBarTranslucent={true}
+    >
+      <View style={styles.modalRoot}>
+        {/* Semi-transparent Backdrop with Tap-To-Close */}
+        <TouchableWithoutFeedback onPress={handleClose}>
+          <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
+        </TouchableWithoutFeedback>
 
-      {/* Animated Drawer Panel */}
-      <Animated.View
-        style={[
-          styles.drawerPanel,
-          isRTL ? styles.drawerRight : styles.drawerLeft,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          {/* Drawer Brand Header */}
-          <View style={styles.brandHeader}>
-            <View style={[styles.brandRow, isRTL && styles.rowRTL]}>
-              <View style={styles.logoBadge}>
-                <Text style={styles.logoEmoji}>👶</Text>
+        {/* Animated Drawer Panel */}
+        <Animated.View
+          style={[
+            styles.drawerPanel,
+            isRTL ? styles.drawerRight : styles.drawerLeft,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
+          <SafeAreaView style={styles.safeArea}>
+            {/* Drawer Brand Header */}
+            <View style={styles.brandHeader}>
+              <View style={[styles.brandRow, isRTL && styles.rowRTL]}>
+                <View style={styles.logoBadge}>
+                  <Text style={styles.logoEmoji}>👶</Text>
+                </View>
+                <View>
+                  <Text style={styles.brandTitle}>CareNest</Text>
+                  <Text style={styles.brandArabicTitle}>كير نست</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.brandTitle}>CareNest</Text>
-                <Text style={styles.brandArabicTitle}>كير نست</Text>
-              </View>
+
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={handleClose}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={colors.white} />
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.closeBtn} onPress={closeDrawer}>
-              <Ionicons name="close" size={24} color={colors.white} />
-            </TouchableOpacity>
-          </View>
+            {/* User Account / Guest Snippet */}
+            <View style={styles.userCard}>
+              {isAuthenticated ? (
+                <View style={[styles.userRow, isRTL && styles.rowRTL]}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarLetter}>
+                      {(user?.username || user?.name || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.userDetails}>
+                    <Text style={styles.userName} numberOfLines={1}>
+                      {user?.username || user?.name}
+                    </Text>
+                    <Text style={styles.userEmail} numberOfLines={1}>
+                      {user?.email}
+                    </Text>
+                    <Badge
+                      label={user?.role === 'babysitter' ? t('babysitter') : t('user')}
+                      variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
+                      style={styles.rolePill}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.guestBox}>
+                  <Text style={[styles.guestTitle, isRTL && styles.textRTL]}>{t('welcome')}</Text>
+                  <Text style={[styles.guestSubtitle, isRTL && styles.textRTL]}>
+                    {locale === 'ar' ? 'سجّل دخولك للتمتع بكافة الميزات' : 'Sign in to access all features'}
+                  </Text>
+                  <View style={styles.guestButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.guestBtn}
+                      onPress={() => handleNav('Login')}
+                    >
+                      <Text style={styles.guestBtnText}>{t('login')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.guestBtn, styles.guestBtnOutline]}
+                      onPress={() => handleNav('Register')}
+                    >
+                      <Text style={styles.guestBtnTextOutline}>{t('register')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
 
-          {/* User Account Snippet */}
-          <View style={styles.userCard}>
-            {isAuthenticated ? (
-              <View style={[styles.userRow, isRTL && styles.rowRTL]}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarLetter}>
-                    {(user?.username || user?.name || 'U').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.userDetails}>
-                  <Text style={styles.userName} numberOfLines={1}>
-                    {user?.username || user?.name}
-                  </Text>
-                  <Text style={styles.userEmail} numberOfLines={1}>
-                    {user?.email}
-                  </Text>
-                  <Badge
-                    label={user?.role === 'babysitter' ? t('babysitter') : t('user')}
-                    variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
-                    style={styles.rolePill}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.guestBox}>
-                <Text style={[styles.guestTitle, isRTL && styles.textRTL]}>{t('welcome')}</Text>
-                <Text style={[styles.guestSubtitle, isRTL && styles.textRTL]}>
-                  {locale === 'ar' ? 'سجّل دخولك للتمتع بكافة الميزات' : 'Sign in to access all features'}
+            {/* Navigation Menu List */}
+            <View style={styles.menuList}>
+              {menuItems.map((item) => {
+                const active = currentScreen === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.menuItem,
+                      active && styles.menuItemActive,
+                      isRTL && styles.rowRTL,
+                    ]}
+                    onPress={() => handleNav(item.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color={active ? colors.white : colors.plum}
+                    />
+                    <Text
+                      style={[
+                        styles.menuText,
+                        active && styles.menuTextActive,
+                        isRTL && styles.textRTL,
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    {active && (
+                      <Ionicons
+                        name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                        size={16}
+                        color={colors.white}
+                        style={styles.activeChevron}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Language Switcher Section Inside Side Menu */}
+            <View style={styles.langSection}>
+              <View style={[styles.langHeaderRow, isRTL && styles.rowRTL]}>
+                <Ionicons name="language" size={18} color={colors.plum} />
+                <Text style={styles.langSectionTitle}>
+                  {locale === 'ar' ? 'لغة التطبيق' : 'App Language'}
                 </Text>
-                <View style={styles.guestButtonsRow}>
-                  <TouchableOpacity
-                    style={styles.guestBtn}
-                    onPress={() => handleNav('Login')}
-                  >
-                    <Text style={styles.guestBtnText}>{t('login')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.guestBtn, styles.guestBtnOutline]}
-                    onPress={() => handleNav('Register')}
-                  >
-                    <Text style={styles.guestBtnTextOutline}>{t('register')}</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
-            )}
-          </View>
 
-          {/* Navigation Links */}
-          <View style={styles.menuList}>
-            {menuItems.map((item) => {
-              const active = currentScreen === item.id;
-              return (
+              <View style={styles.langToggleRow}>
                 <TouchableOpacity
-                  key={item.id}
                   style={[
-                    styles.menuItem,
-                    active && styles.menuItemActive,
-                    isRTL && styles.rowRTL,
+                    styles.langOption,
+                    locale === 'ar' && styles.langOptionActive,
                   ]}
-                  onPress={() => handleNav(item.id)}
-                  activeOpacity={0.7}
+                  onPress={() => setLocale('ar')}
                 >
-                  <Ionicons
-                    name={item.icon}
-                    size={20}
-                    color={active ? colors.white : colors.plum}
-                  />
                   <Text
                     style={[
-                      styles.menuText,
-                      active && styles.menuTextActive,
-                      isRTL && styles.textRTL,
+                      styles.langOptionText,
+                      locale === 'ar' && styles.langOptionTextActive,
                     ]}
                   >
-                    {item.title}
+                    العربية (افتراضي)
                   </Text>
-                  {active && (
-                    <Ionicons
-                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                      size={16}
-                      color={colors.white}
-                      style={styles.activeChevron}
-                    />
-                  )}
                 </TouchableOpacity>
-              );
-            })}
-          </View>
 
-          {/* Language Switcher Section (Required in side menu) */}
-          <View style={styles.langSection}>
-            <View style={[styles.langHeaderRow, isRTL && styles.rowRTL]}>
-              <Ionicons name="language" size={18} color={colors.plum} />
-              <Text style={styles.langSectionTitle}>
-                {locale === 'ar' ? 'لغة التطبيق' : 'App Language'}
+                <TouchableOpacity
+                  style={[
+                    styles.langOption,
+                    locale === 'en' && styles.langOptionActive,
+                  ]}
+                  onPress={() => setLocale('en')}
+                >
+                  <Text
+                    style={[
+                      styles.langOptionText,
+                      locale === 'en' && styles.langOptionTextActive,
+                    ]}
+                  >
+                    English
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Footer / Logout */}
+            <View style={styles.footerContainer}>
+              {isAuthenticated ? (
+                <TouchableOpacity
+                  style={[styles.logoutButton, isRTL && styles.rowRTL]}
+                  onPress={handleLogout}
+                >
+                  <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+                  <Text style={styles.logoutText}>{t('logout')}</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <Text style={styles.versionText}>
+                CareNest Mobile v1.0 • منصة كير نست
               </Text>
             </View>
-
-            <View style={styles.langToggleRow}>
-              <TouchableOpacity
-                style={[
-                  styles.langOption,
-                  locale === 'ar' && styles.langOptionActive,
-                ]}
-                onPress={() => setLocale('ar')}
-              >
-                <Text
-                  style={[
-                    styles.langOptionText,
-                    locale === 'ar' && styles.langOptionTextActive,
-                  ]}
-                >
-                  العربية (افتراضي)
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.langOption,
-                  locale === 'en' && styles.langOptionActive,
-                ]}
-                onPress={() => setLocale('en')}
-              >
-                <Text
-                  style={[
-                    styles.langOptionText,
-                    locale === 'en' && styles.langOptionTextActive,
-                  ]}
-                >
-                  English
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Logout / Sign-In Bottom Action */}
-          <View style={styles.footerContainer}>
-            {isAuthenticated ? (
-              <TouchableOpacity
-                style={[styles.logoutButton, isRTL && styles.rowRTL]}
-                onPress={handleLogout}
-              >
-                <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-                <Text style={styles.logoutText}>{t('logout')}</Text>
-              </TouchableOpacity>
-            ) : null}
-
-            <Text style={styles.versionText}>
-              CareNest Mobile v1.0 • منصة كير نست
-            </Text>
-          </View>
-        </SafeAreaView>
-      </Animated.View>
-    </View>
+          </SafeAreaView>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(26, 12, 34, 0.65)',
-    zIndex: 998,
   },
   drawerPanel: {
     position: 'absolute',
@@ -290,12 +328,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: DRAWER_WIDTH,
     backgroundColor: '#ffffff',
-    zIndex: 999,
     shadowColor: '#300f38',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    elevation: 16,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
   },
   drawerLeft: {
     left: 0,
@@ -309,7 +346,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    display: 'flex',
     flexDirection: 'column',
   },
   brandHeader: {
@@ -413,7 +449,7 @@ const styles = StyleSheet.create({
   guestBtn: {
     flex: 1,
     backgroundColor: colors.plum,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: radius.md,
     alignItems: 'center',
   },
@@ -491,7 +527,7 @@ const styles = StyleSheet.create({
   },
   langOption: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 7,
     alignItems: 'center',
     borderRadius: radius.pill,
   },

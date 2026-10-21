@@ -125,8 +125,10 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
           {/* Key Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{sitter.hourlyRate || 100} {sitter.currency || 'EGP'}</Text>
-              <Text style={styles.statLabel}>{t('hourlyRate')}</Text>
+              <Text style={styles.statValue}>
+                {Number(sitter.monthlySalary != null ? sitter.monthlySalary : (sitter.hourlyRate || 7000)).toLocaleString()} {sitter.currency || 'EGP'}
+              </Text>
+              <Text style={styles.statLabel}>{t('monthlySalary')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>

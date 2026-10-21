@@ -33,11 +33,12 @@ export default function BookCaregiverScreen({ route, navigation }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Compute duration & total cost
+  // Duration & Salary
   const durationHours = 4; // default between 10:00 and 14:00
-  const rate = sitter?.hourlyRate || 100;
+  const monthlySalary = sitter?.monthlySalary != null ? sitter.monthlySalary : (sitter?.hourlyRate || 7000);
   const currency = sitter?.currency || 'EGP';
-  const totalCost = durationHours * rate;
+  const estimatedHourly = Math.round(monthlySalary / (26 * 8));
+  const totalCost = Math.max(durationHours * estimatedHourly, 250);
 
   const handleBookingSubmit = async () => {
     if (!address.trim()) {
@@ -163,12 +164,12 @@ export default function BookCaregiverScreen({ route, navigation }) {
 
           {/* Cost Summary Box */}
           <View style={styles.costBox}>
-            <Text style={styles.costLabel}>{t('estimatedCost')}</Text>
+            <Text style={styles.costLabel}>{t('monthlySalary')}</Text>
             <Text style={styles.costAmount}>
-              ~ {totalCost} {currency}
+              {Number(monthlySalary).toLocaleString()} {currency} {t('perMonth')}
             </Text>
             <Text style={styles.costDisclaimer}>
-              ({durationHours} hours @ {rate} {currency}/hr)
+              {t('estimatedCost')}: ~ {totalCost} {currency} ({durationHours} hrs)
             </Text>
           </View>
 

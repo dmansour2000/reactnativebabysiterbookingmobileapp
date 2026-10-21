@@ -38,7 +38,7 @@ export default function RegisterScreen({ navigation }) {
   const [nationalId, setNationalId] = useState('');
   const [age, setAge] = useState('25');
   const [experience, setExperience] = useState('2');
-  const [hourlyRate, setHourlyRate] = useState('120');
+  const [monthlySalary, setMonthlySalary] = useState('7000');
   const [currency, setCurrency] = useState('EGP');
   const [city, setCity] = useState('Cairo');
   const [services, setServices] = useState(['babysitting']);
@@ -84,7 +84,8 @@ export default function RegisterScreen({ navigation }) {
         formData.append('nationalId', nationalId.trim());
         formData.append('age', String(age));
         formData.append('experience', String(experience));
-        formData.append('hourlyRate', String(hourlyRate));
+        formData.append('monthlySalary', String(monthlySalary));
+        formData.append('hourlyRate', String(monthlySalary));
         formData.append('currency', currency);
         formData.append('city', city);
         formData.append('services', JSON.stringify(services));
@@ -224,10 +225,10 @@ export default function RegisterScreen({ navigation }) {
                 </View>
                 <View style={styles.formCol}>
                   <Input
-                    label={t('hourlyRate')}
-                    value={hourlyRate}
-                    onChangeText={setHourlyRate}
-                    placeholder="120"
+                    label={t('monthlySalary')}
+                    value={monthlySalary}
+                    onChangeText={setMonthlySalary}
+                    placeholder="7000"
                     keyboardType="numeric"
                     required
                   />
