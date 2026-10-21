@@ -35,9 +35,15 @@ export default function LoginScreen({ navigation }) {
     try {
       const data = await login(identifier, password);
       if (data?.user?.role === 'babysitter') {
-        navigation.navigate('Main', { screen: 'BookingsTab' });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'ProfileTab' } }],
+        });
       } else {
-        navigation.navigate('Main', { screen: 'ExploreTab' });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'ExploreTab' } }],
+        });
       }
     } catch (err) {
       Alert.alert(t('error'), err.message || t('loginFailed'));
@@ -98,9 +104,15 @@ export default function LoginScreen({ navigation }) {
             flow="login"
             onSuccess={(authResult) => {
               if (authResult?.user?.role === 'babysitter') {
-                navigation.navigate('Main', { screen: 'BookingsTab' });
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main', params: { screen: 'ProfileTab' } }],
+                });
               } else {
-                navigation.navigate('Main', { screen: 'ExploreTab' });
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main', params: { screen: 'ExploreTab' } }],
+                });
               }
             }}
           />

@@ -51,10 +51,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (identifier, password) => {
-    const isEmail = identifier.includes('@');
-    const payload = isEmail 
-      ? { email: identifier.trim().toLowerCase(), password }
-      : { username: identifier.trim(), password };
+    const raw = (identifier || '').trim();
+    const isEmail = raw.includes('@');
+    const payload = {
+      username: raw,
+      email: isEmail ? raw.toLowerCase() : raw,
+      identifier: raw,
+      password,
+    };
 
     const data = await apiRequest('/api/user/login', {
       method: 'POST',
