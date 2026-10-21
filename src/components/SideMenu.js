@@ -7,11 +7,11 @@ import {
   TouchableWithoutFeedback,
   Animated,
   Dimensions,
-  SafeAreaView,
   Alert,
   Modal,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
