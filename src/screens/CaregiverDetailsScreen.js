@@ -17,6 +17,7 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import Input from '../components/Input';
 import CaregiverAvatar from '../components/CaregiverAvatar';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
@@ -28,20 +29,30 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function CaregiverDetailsScreen({ route, navigation }) {
   const { sitterId, sitter: initialSitter } = route.params || {};
   const { t, isRTL } = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [sitter, setSitter] = useState(initialSitter || null);
   const [loading, setLoading] = useState(!initialSitter);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
+  // Reviews & Rating Modal state
+  const [rateModalVisible, setRateModalVisible] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewDescription, setReviewDescription] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviews, setReviews] = useState(initialSitter?.reviews || []);
+
   useEffect(() => {
     (async () => {
       try {
         const data = await apiRequest(`/api/babysitter/users/${sitterId}`);
-        if (data?.babysitter) {
-          setSitter(data.babysitter);
-        } else if (data?._id) {
-          setSitter(data);
+        const loadedSitter = data?.babysitter || (data?._id ? data : null);
+        if (loadedSitter) {
+          setSitter(loadedSitter);
+          if (Array.isArray(loadedSitter.reviews)) {
+            setReviews(loadedSitter.reviews);
+          }
         }
       } catch (err) {
         console.warn('Failed to load caregiver:', err.message);
@@ -53,6 +64,56 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
       }
     })();
   }, [sitterId]);
+
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(t('login'), t('loginToBookNotice'));
+      return;
+    }
+    if (!reviewTitle.trim()) {
+      Alert.alert(t('error'), 'Please enter a review title.');
+      return;
+    }
+    if (!reviewDescription.trim()) {
+      Alert.alert(t('error'), 'Please enter a review description.');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const res = await apiRequest(`/api/babysitter/${sitter._id}/reviews`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rating: selectedRating,
+          title: reviewTitle.trim(),
+          description: reviewDescription.trim(),
+        }),
+      });
+
+      if (res.review) {
+        setReviews((prev) => [
+          res.review,
+          ...prev.filter((r) => String(r.userId) !== String(user?.id)),
+        ]);
+      }
+      if (res.stats) {
+        setSitter((prev) => ({
+          ...prev,
+          averageRating: res.stats.averageRating,
+          ratingsCount: res.stats.ratingsCount,
+        }));
+      }
+
+      setRateModalVisible(false);
+      setReviewTitle('');
+      setReviewDescription('');
+      Alert.alert(t('success'), t('reviewSubmittedSuccess'));
+    } catch (err) {
+      Alert.alert(t('error'), err.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   if (loading && !sitter) {
     return (
@@ -141,6 +202,14 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             <Text style={styles.name}>{sitter.name}</Text>
             <Text style={styles.city}>{sitter.city || 'Cairo, Egypt'}</Text>
 
+            {/* Star Rating Badge */}
+            <View style={styles.ratingBadgeLarge}>
+              <Ionicons name="star" size={17} color={colors.gold} />
+              <Text style={styles.ratingLargeText}>
+                {sitter.averageRating != null ? sitter.averageRating.toFixed(1) : '5.0'} ({sitter.ratingsCount != null ? sitter.ratingsCount : 0})
+              </Text>
+            </View>
+
             <View style={styles.badgeRow}>
               <Badge
                 label={isAvailable ? t('available') : t('unavailable')}
@@ -151,6 +220,18 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
                 <Text style={styles.verifiedText}>{t('verified')}</Text>
               </View>
             </View>
+
+            {/* Rate Caregiver Action for Regular Users */}
+            {isAuthenticated && user?.role === 'user' && (
+              <TouchableOpacity
+                style={styles.rateSitterButton}
+                onPress={() => setRateModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="star-outline" size={17} color={colors.plum} />
+                <Text style={styles.rateSitterButtonText}>{t('rateCaregiver')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Key Stats Row */}
@@ -195,6 +276,69 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
           </View>
         </Card>
 
+        {/* Ratings & Reviews Section */}
+        <Card>
+          <View style={[styles.reviewsSectionHeader, isRTL && styles.rowRTL]}>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              {t('ratingsAndReviews')} ({sitter.ratingsCount != null ? sitter.ratingsCount : 0})
+            </Text>
+            {isAuthenticated && user?.role === 'user' && (
+              <TouchableOpacity
+                onPress={() => setRateModalVisible(true)}
+                style={styles.headerRateAction}
+              >
+                <Text style={styles.headerRateActionText}>{t('leaveReview')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {reviews && reviews.length > 0 ? (
+            <View style={styles.reviewsList}>
+              {reviews.map((rev, idx) => (
+                <View key={rev._id || idx} style={styles.reviewItem}>
+                  <View style={[styles.reviewTopRow, isRTL && styles.rowRTL]}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.reviewerAvatarLetter}>
+                        {(rev.userName || 'U').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.reviewerInfo}>
+                      <Text style={[styles.reviewerName, isRTL && styles.textRTL]}>
+                        {rev.userName || 'Family Member'}
+                      </Text>
+                      <Text style={[styles.reviewDate, isRTL && styles.textRTL]}>
+                        {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent'}
+                      </Text>
+                    </View>
+                    <View style={[styles.starRow, isRTL && styles.rowRTL]}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Ionicons
+                          key={s}
+                          name={s <= rev.rating ? 'star' : 'star-outline'}
+                          size={14}
+                          color={s <= rev.rating ? colors.gold : '#d3cad6'}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                  <Text style={[styles.reviewTitleText, isRTL && styles.textRTL]}>
+                    {rev.title}
+                  </Text>
+                  <Text style={[styles.reviewBodyText, isRTL && styles.textRTL]}>
+                    {rev.description}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyReviewsBox}>
+              <Ionicons name="star-outline" size={32} color={colors.textLight} />
+              <Text style={styles.emptyReviewsTitle}>{t('noReviewsYet')}</Text>
+              <Text style={styles.emptyReviewsSubtitle}>{t('firstToReview')}</Text>
+            </View>
+          )}
+        </Card>
+
         {/* Booking CTA Button */}
         <View style={styles.ctaContainer}>
           <Button
@@ -207,6 +351,78 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
           />
         </View>
       </ScrollView>
+
+      {/* Rate Caregiver Popup Modal */}
+      <Modal
+        visible={rateModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setRateModalVisible(false)}
+      >
+        <View style={styles.rateModalOverlay}>
+          <View style={styles.rateModalContent}>
+            <View style={[styles.rateModalHeader, isRTL && styles.rowRTL]}>
+              <Text style={styles.rateModalTitle}>{t('rateCaregiver')}</Text>
+              <TouchableOpacity onPress={() => setRateModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close-circle" size={26} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.rateModalScroll}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              {/* Star selector */}
+              <Text style={[styles.starsPickerLabel, isRTL && styles.textRTL]}>
+                {t('selectRating')}
+              </Text>
+              <View style={styles.interactiveStarsRow}>
+                {[1, 2, 3, 4, 5].map((starNum) => (
+                  <TouchableOpacity
+                    key={starNum}
+                    onPress={() => setSelectedRating(starNum)}
+                    activeOpacity={0.7}
+                    style={styles.starTouchTarget}
+                  >
+                    <Ionicons
+                      name={starNum <= selectedRating ? 'star' : 'star-outline'}
+                      size={36}
+                      color={starNum <= selectedRating ? colors.gold : '#d3cad6'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Input
+                label={t('reviewTitle')}
+                value={reviewTitle}
+                onChangeText={setReviewTitle}
+                placeholder={t('reviewTitlePlaceholder')}
+                required
+              />
+
+              <Input
+                label={t('reviewDescription')}
+                value={reviewDescription}
+                onChangeText={setReviewDescription}
+                placeholder={t('reviewDescriptionPlaceholder')}
+                multiline
+                numberOfLines={4}
+                required
+              />
+
+              <Button
+                title={t('submitReview')}
+                variant="plum"
+                onPress={handleSubmitReview}
+                loading={submittingReview}
+                style={styles.submitReviewBtn}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Full-Screen Photo Modal */}
       <Modal
@@ -471,5 +687,175 @@ const styles = StyleSheet.create({
     color: '#e7dbe9',
     marginTop: 4,
     textAlign: 'center',
+  },
+  // Rating & Review styles
+  ratingBadgeLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#fff9e6',
+    borderWidth: 1,
+    borderColor: '#ffe8a3',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    marginBottom: 10,
+  },
+  ratingLargeText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.plum,
+  },
+  rateSitterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.plum,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    marginTop: 12,
+  },
+  rateSitterButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  reviewsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  headerRateAction: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  headerRateActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  reviewsList: {
+    marginTop: 6,
+  },
+  reviewItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1e8f2',
+  },
+  reviewTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 10,
+  },
+  reviewerAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#f1e5f3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewerAvatarLetter: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.plum,
+  },
+  reviewerInfo: {
+    flex: 1,
+  },
+  reviewerName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  reviewDate: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  starRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reviewTitleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 3,
+  },
+  reviewBodyText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },
+  emptyReviewsBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  emptyReviewsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 6,
+  },
+  emptyReviewsSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  // Rate Modal Overlay
+  rateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  rateModalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    maxHeight: '90%',
+    padding: spacing.lg,
+  },
+  rateModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  rateModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  rateModalScroll: {
+    paddingBottom: 30,
+  },
+  starsPickerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  interactiveStarsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: spacing.lg,
+  },
+  starTouchTarget: {
+    padding: 4,
+  },
+  submitReviewBtn: {
+    marginTop: spacing.sm,
+    borderRadius: radius.md,
+  },
+  rowRTL: {
+    flexDirection: 'row-reverse',
   },
 });

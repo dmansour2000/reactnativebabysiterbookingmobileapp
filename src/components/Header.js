@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
+import { useAuth } from '../context/AuthContext';
 import { useDrawer } from '../context/DrawerContext';
+import NotificationsModal from './NotificationsModal';
+import { apiRequest } from '../services/api';
 
 export default function Header({
   title,
@@ -13,7 +16,23 @@ export default function Header({
   rightElement,
 }) {
   const { isRTL } = useLocale();
+  const { isAuthenticated } = useAuth();
   const { openDrawer } = useDrawer();
+
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      apiRequest('/api/notifications')
+        .then((res) => {
+          if (res?.unreadCount != null) {
+            setUnreadCount(res.unreadCount);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   return (
     <View style={styles.container}>
@@ -61,6 +80,19 @@ export default function Header({
         {/* Right Side: Additional action or Side Menu trigger */}
         <View style={styles.rightRow}>
           {rightElement}
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={styles.bellButton}
+              onPress={() => setShowNotifModal(true)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications-outline" size={21} color={colors.white} />
+              {unreadCount > 0 && <View style={styles.headerNotifDot} />}
+            </TouchableOpacity>
+          )}
+
           {showBack ? (
             <TouchableOpacity
               style={styles.iconButton}
@@ -72,6 +104,12 @@ export default function Header({
           ) : null}
         </View>
       </View>
+
+      <NotificationsModal
+        visible={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        onNotificationCountChange={setUnreadCount}
+      />
     </View>
   );
 }
@@ -150,5 +188,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  bellButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  headerNotifDot: {
+    position: 'absolute',
+    top: 6,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.danger,
+    borderWidth: 1.5,
+    borderColor: '#3d164d',
   },
 });

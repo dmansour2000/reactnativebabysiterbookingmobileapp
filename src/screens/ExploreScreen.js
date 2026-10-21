@@ -113,7 +113,7 @@ export default function ExploreScreen({ navigation }) {
                 <View style={styles.ratingBadge}>
                   <Ionicons name="star" size={13} color={colors.gold} />
                   <Text style={styles.ratingText}>
-                    {item.averageRating ? item.averageRating.toFixed(1) : '5.0'}
+                    {item.averageRating != null ? item.averageRating.toFixed(1) : '5.0'} ({item.ratingsCount != null ? item.ratingsCount : 0})
                   </Text>
                 </View>
               </View>

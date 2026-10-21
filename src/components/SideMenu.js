@@ -18,6 +18,7 @@ import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { useDrawer } from '../context/DrawerContext';
 import Badge from './Badge';
+import NotificationsModal from './NotificationsModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
@@ -26,6 +27,8 @@ export default function SideMenu({ navigation }) {
   const { t, locale, setLocale, isRTL } = useLocale();
   const { user, isAuthenticated, logout } = useAuth();
   const { isOpen, closeDrawer, currentScreen, navigateTo } = useDrawer();
+
+  const [showNotifModal, setShowNotifModal] = useState(false);
 
   // Animation values - always slide from left (-DRAWER_WIDTH to 0)
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -113,6 +116,15 @@ export default function SideMenu({ navigation }) {
             id: 'Bookings',
             title: t('bookings'),
             icon: 'calendar',
+          },
+          {
+            id: 'Notifications',
+            title: t('notifications'),
+            icon: 'notifications',
+            action: () => {
+              handleClose();
+              setTimeout(() => setShowNotifModal(true), 200);
+            },
           },
           {
             id: 'Safety',
@@ -241,7 +253,7 @@ export default function SideMenu({ navigation }) {
                       active && styles.menuItemActive,
                       isRTL && styles.rowRTL,
                     ]}
-                    onPress={() => handleNav(item.id)}
+                    onPress={() => (item.action ? item.action() : handleNav(item.id))}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -336,6 +348,11 @@ export default function SideMenu({ navigation }) {
           </SafeAreaView>
         </Animated.View>
       </View>
+
+      <NotificationsModal
+        visible={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+      />
     </Modal>
   );
 }

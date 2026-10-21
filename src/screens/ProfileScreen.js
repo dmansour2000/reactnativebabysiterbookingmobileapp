@@ -20,14 +20,55 @@ import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../services/api';
+import NotificationsModal from '../components/NotificationsModal';
 
 export default function ProfileScreen({ navigation }) {
   const { t, locale, setLocale, isRTL } = useLocale();
   const { user, isAuthenticated, isCaregiver, logout, changePassword, changeEmail } = useAuth();
 
+  // Notifications state
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+
+  // Caregiver stats and reviews
+  const [caregiverStats, setCaregiverStats] = useState({ averageRating: 5.0, ratingsCount: 0 });
+  const [caregiverReviews, setCaregiverReviews] = useState([]);
+
   // Caregiver availability toggle
   const [isAvailable, setIsAvailable] = useState(true);
   const [togglingAvailability, setTogglingAvailability] = useState(false);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      // 1. Fetch notifications
+      apiRequest('/api/notifications')
+        .then((res) => {
+          if (Array.isArray(res?.notifications)) {
+            setRecentNotifications(res.notifications.slice(0, 3));
+            setUnreadCount(res.unreadCount || 0);
+          }
+        })
+        .catch(() => {});
+
+      // 2. If caregiver, load profile rating stats & reviews
+      if (isCaregiver && user?.id) {
+        apiRequest(`/api/babysitter/users/${user.id}`)
+          .then((data) => {
+            if (data?.averageRating != null) {
+              setCaregiverStats({
+                averageRating: data.averageRating,
+                ratingsCount: data.ratingsCount || 0,
+              });
+            }
+            if (Array.isArray(data?.reviews)) {
+              setCaregiverReviews(data.reviews);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [isAuthenticated, isCaregiver, user?.id]);
 
   // Password Modal
   const [passwordModal, setPasswordModal] = useState(false);
@@ -159,6 +200,102 @@ export default function ProfileScreen({ navigation }) {
                 </View>
               </Card>
             )}
+
+            {/* Caregiver Ratings & Reviews */}
+            {isCaregiver && (
+              <Card>
+                <View style={[styles.sectionHeadingRow, isRTL && styles.rowRTL]}>
+                  <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t('ratingsAndReviews')}</Text>
+                  <View style={styles.profileRatingBadge}>
+                    <Ionicons name="star" size={14} color={colors.gold} />
+                    <Text style={styles.profileRatingText}>
+                      {caregiverStats.averageRating != null ? caregiverStats.averageRating.toFixed(1) : '5.0'} ({caregiverStats.ratingsCount || 0})
+                    </Text>
+                  </View>
+                </View>
+
+                {caregiverReviews && caregiverReviews.length > 0 ? (
+                  <View style={styles.reviewsFeed}>
+                    {caregiverReviews.slice(0, 3).map((rev, idx) => (
+                      <View key={rev._id || idx} style={styles.reviewSnippet}>
+                        <View style={[styles.reviewSnippetHeader, isRTL && styles.rowRTL]}>
+                          <Text style={styles.snippetUserName}>{rev.userName || 'Family Member'}</Text>
+                          <View style={styles.snippetStars}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Ionicons
+                                key={s}
+                                name={s <= rev.rating ? 'star' : 'star-outline'}
+                                size={12}
+                                color={s <= rev.rating ? colors.gold : '#d3cad6'}
+                              />
+                            ))}
+                          </View>
+                        </View>
+                        <Text style={styles.snippetTitle}>{rev.title}</Text>
+                        <Text style={styles.snippetDesc} numberOfLines={2}>{rev.description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={[styles.emptySectionText, isRTL && styles.textRTL]}>
+                    {t('noReviewsYet')}
+                  </Text>
+                )}
+              </Card>
+            )}
+
+            {/* Notifications Center Card */}
+            <Card>
+              <View style={[styles.sectionHeadingRow, isRTL && styles.rowRTL]}>
+                <View style={[styles.headingWithBadge, isRTL && styles.rowRTL]}>
+                  <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t('notifications')}</Text>
+                  {unreadCount > 0 && (
+                    <View style={styles.unreadPill}>
+                      <Text style={styles.unreadPillText}>{unreadCount}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setShowNotifModal(true)}
+                  style={styles.viewAllBtn}
+                >
+                  <Text style={styles.viewAllBtnText}>{isArabic ? 'عرض الكل' : 'View All'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {recentNotifications && recentNotifications.length > 0 ? (
+                <View style={styles.notifFeed}>
+                  {recentNotifications.map((notif) => (
+                    <TouchableOpacity
+                      key={notif._id}
+                      style={[styles.notifSnippet, !notif.read && styles.notifSnippetUnread, isRTL && styles.rowRTL]}
+                      onPress={() => setShowNotifModal(true)}
+                    >
+                      <View style={styles.notifSnippetIcon}>
+                        <Ionicons
+                          name={notif.type === 'rating_received' ? 'star' : notif.type === 'booking_requested' ? 'calendar' : 'notifications'}
+                          size={16}
+                          color={notif.type === 'rating_received' ? colors.gold : colors.plum}
+                        />
+                      </View>
+                      <View style={styles.notifSnippetContent}>
+                        <Text style={[styles.notifSnippetTitle, !notif.read && styles.notifSnippetTitleBold, isRTL && styles.textRTL]} numberOfLines={1}>
+                          {notif.title}
+                        </Text>
+                        <Text style={[styles.notifSnippetMsg, isRTL && styles.textRTL]} numberOfLines={1}>
+                          {notif.message}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <Text style={[styles.emptySectionText, isRTL && styles.textRTL]}>
+                  {t('noNotifications')}
+                </Text>
+              )}
+            </Card>
 
             {/* Security Section */}
             <Card>
@@ -303,6 +440,13 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Notifications Modal */}
+      <NotificationsModal
+        visible={showNotifModal}
+        onClose={() => setShowNotifModal(false)}
+        onNotificationCountChange={setUnreadCount}
+      />
     </ScreenWrapper>
   );
 }
@@ -452,5 +596,130 @@ const styles = StyleSheet.create({
   },
   textRTL: {
     textAlign: 'right',
+  },
+  sectionHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  headingWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  unreadPill: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    borderRadius: radius.pill,
+  },
+  unreadPillText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  viewAllBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  viewAllBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  profileRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff9e6',
+    borderWidth: 1,
+    borderColor: '#ffe8a3',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: radius.pill,
+  },
+  profileRatingText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.plum,
+  },
+  reviewsFeed: {
+    marginTop: 8,
+  },
+  reviewSnippet: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1e8f2',
+  },
+  reviewSnippetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  snippetUserName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  snippetStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  snippetTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.plum,
+    marginTop: 2,
+  },
+  snippetDesc: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  notifFeed: {
+    marginTop: 6,
+  },
+  notifSnippet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1e8f2',
+  },
+  notifSnippetUnread: {
+    backgroundColor: '#fbf7fc',
+  },
+  notifSnippetIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f5eff7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifSnippetContent: {
+    flex: 1,
+  },
+  notifSnippetTitle: {
+    fontSize: 12,
+    color: colors.text,
+  },
+  notifSnippetTitleBold: {
+    fontWeight: '800',
+    color: colors.plum,
+  },
+  notifSnippetMsg: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  emptySectionText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginVertical: 8,
   },
 });
