@@ -36,7 +36,6 @@ export default function RegisterScreen({ navigation }) {
   // Caregiver fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [nationalId, setNationalId] = useState('');
   const [age, setAge] = useState('25');
   const [experience, setExperience] = useState('2');
   const [monthlySalary, setMonthlySalary] = useState('7000');
@@ -71,48 +70,46 @@ export default function RegisterScreen({ navigation }) {
         }
         await registerFamily({ username, email, password });
       } else {
-        if (!name.trim() || !phone.trim() || !nationalId.trim()) {
+        if (!name.trim() || !phone.trim()) {
           Alert.alert(t('error'), t('fillCaregiverFieldsPrompt'));
           setLoading(false);
           return;
         }
 
-        const formData = new FormData();
-        formData.append('name', name.trim());
-        formData.append('email', email.trim().toLowerCase());
-        formData.append('password', password);
-        formData.append('phone', phone.trim());
-        formData.append('nationalId', nationalId.trim());
-        formData.append('age', String(age));
-        formData.append('experience', String(experience));
-        formData.append('monthlySalary', String(monthlySalary));
-        formData.append('hourlyRate', String(monthlySalary));
-        formData.append('currency', currency);
-        formData.append('city', city);
-        formData.append('services', JSON.stringify(services));
-        formData.append('bio', bio.trim());
+        const baseUsername = (name.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'caregiver');
+        const sitterUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // Dummy text files for verification if no camera chosen
-        formData.append('nationalIdCard', {
-          uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-          name: 'id_card.png',
-          type: 'image/png'
-        });
-        formData.append('criminalRecord', {
-          uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-          name: 'criminal_record.png',
-          type: 'image/png'
-        });
+        const payload = {
+          username: sitterUsername,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          phone: phone.trim(),
+          age: Number(age) || 25,
+          experience: Number(experience) || 2,
+          monthlySalary: Number(monthlySalary) || 4000,
+          hourlyRate: Number(monthlySalary) || 4000,
+          currency: currency || 'EGP',
+          city: city || 'Cairo',
+          services: Array.isArray(services) && services.length > 0 ? services : ['babysitting'],
+          bio: bio.trim(),
+        };
 
-        await registerCaregiver(formData);
+        await registerCaregiver(payload);
       }
 
-      Alert.alert(t('success'), t('registrationSuccessful') || 'Account created successfully!');
       if (role === 'babysitter') {
-        navigation.navigate('Main', { screen: 'BookingsTab' });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'ProfileTab' } }],
+        });
       } else {
-        navigation.navigate('Main', { screen: 'ExploreTab' });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'ExploreTab' } }],
+        });
       }
+      Alert.alert(t('success'), t('registrationSuccessful') || 'Account created successfully!');
     } catch (err) {
       Alert.alert(t('error'), err.message || t('registrationFailed'));
     } finally {
@@ -219,14 +216,6 @@ export default function RegisterScreen({ navigation }) {
                 keyboardType="phone-pad"
                 required
               />
-              <Input
-                label={t('nationalId')}
-                value={nationalId}
-                onChangeText={setNationalId}
-                placeholder="14-digit National ID"
-                keyboardType="numeric"
-                required
-              />
 
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
@@ -291,11 +280,18 @@ export default function RegisterScreen({ navigation }) {
           {/* Google Sign-Up */}
           <GoogleAuthButton
             flow="register"
+            role={role}
             onSuccess={(authResult) => {
-              if (authResult?.user?.role === 'babysitter') {
-                navigation.navigate('Main', { screen: 'BookingsTab' });
+              if (authResult?.user?.role === 'babysitter' || role === 'babysitter') {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main', params: { screen: 'ProfileTab' } }],
+                });
               } else {
-                navigation.navigate('Main', { screen: 'ExploreTab' });
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main', params: { screen: 'ExploreTab' } }],
+                });
               }
             }}
           />

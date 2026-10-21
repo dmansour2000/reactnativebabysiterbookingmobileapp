@@ -8,23 +8,36 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
 import Card from '../components/Card';
-import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest } from '../services/api';
+import { apiRequest, API_BASE } from '../services/api';
 import NotificationsModal from '../components/NotificationsModal';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { t, locale, setLocale, isRTL } = useLocale();
-  const { user, isAuthenticated, isCaregiver, logout, changePassword, changeEmail } = useAuth();
+  const { user, isAuthenticated, isCaregiver, logout, changePassword, changeEmail, refreshUser } = useAuth();
+  const isArabic = locale === 'ar';
+
+  // Edit Profile Modal
+  const [editModal, setEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editPhoto, setEditPhoto] = useState(null);
+  const [editDocuments, setEditDocuments] = useState([]);
+  const [existingDocsCount, setExistingDocsCount] = useState(0);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Notifications state
   const [showNotifModal, setShowNotifModal] = useState(false);
@@ -34,6 +47,11 @@ export default function ProfileScreen({ navigation }) {
   // Caregiver stats and reviews
   const [caregiverStats, setCaregiverStats] = useState({ averageRating: 5.0, ratingsCount: 0 });
   const [caregiverReviews, setCaregiverReviews] = useState([]);
+  const [caregiverPhoto, setCaregiverPhoto] = useState(null);
+  const [caregiverName, setCaregiverName] = useState('');
+  const [caregiverProfile, setCaregiverProfile] = useState(null);
+  const [photoError, setPhotoError] = useState(false);
+  const [photoTimestamp, setPhotoTimestamp] = useState(Date.now());
 
   // Caregiver availability toggle
   const [isAvailable, setIsAvailable] = useState(true);
@@ -51,24 +69,72 @@ export default function ProfileScreen({ navigation }) {
         })
         .catch(() => {});
 
-      // 2. If caregiver, load profile rating stats & reviews
-      if (isCaregiver && user?.id) {
-        apiRequest(`/api/babysitter/users/${user.id}`)
-          .then((data) => {
-            if (data?.averageRating != null) {
-              setCaregiverStats({
-                averageRating: data.averageRating,
-                ratingsCount: data.ratingsCount || 0,
-              });
-            }
-            if (Array.isArray(data?.reviews)) {
-              setCaregiverReviews(data.reviews);
+      // 2. If caregiver, load profile rating stats, reviews & profile info
+      if (isCaregiver) {
+        if (user?.id) {
+          apiRequest(`/api/babysitter/users/${user.id}`)
+            .then((data) => {
+              if (data?.name) {
+                setCaregiverName(data.name);
+              }
+              if (data?.averageRating != null) {
+                setCaregiverStats({
+                  averageRating: data.averageRating,
+                  ratingsCount: data.ratingsCount || 0,
+                });
+              }
+              if (Array.isArray(data?.reviews)) {
+                setCaregiverReviews(data.reviews);
+              }
+              if (data?.photoUrl) {
+                setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : data.photoUrl));
+              }
+            })
+            .catch(() => {});
+        }
+
+        // Fetch own caregiver profile to ensure name, photo & full details are retrieved
+        apiRequest('/api/babysitter/profile')
+          .then((prof) => {
+            if (prof) {
+              setCaregiverProfile(prof);
+              if (prof.name) {
+                setCaregiverName(prof.name);
+              }
+              if (prof.photoUrl) {
+                setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : prof.photoUrl));
+              }
+              if (prof.available !== undefined) {
+                setIsAvailable(prof.available);
+              }
+              const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
+              setExistingDocsCount(count);
             }
           })
           .catch(() => {});
       }
     }
   }, [isAuthenticated, isCaregiver, user?.id]);
+
+  React.useEffect(() => {
+    const unsubscribe = navigation?.addListener?.('focus', () => {
+      if (isAuthenticated && isCaregiver) {
+        apiRequest('/api/babysitter/profile')
+          .then((prof) => {
+            if (prof) {
+              setCaregiverProfile(prof);
+              if (prof.name) setCaregiverName(prof.name);
+              if (prof.photoUrl) setCaregiverPhoto((prev) => (prev?.startsWith('file://') ? prev : prof.photoUrl));
+              if (prof.available !== undefined) setIsAvailable(prof.available);
+              const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
+              setExistingDocsCount(count);
+            }
+          })
+          .catch(() => {});
+      }
+    });
+    return unsubscribe;
+  }, [navigation, isAuthenticated, isCaregiver]);
 
   // Password Modal
   const [passwordModal, setPasswordModal] = useState(false);
@@ -90,10 +156,10 @@ export default function ProfileScreen({ navigation }) {
         method: 'PATCH',
         body: JSON.stringify({ isAvailable: val }),
       });
-      Alert.alert(t('success'), `Availability set to ${val ? 'Available' : 'Busy'}`);
+      Alert.alert(t('success'), t('availabilityUpdated'));
     } catch (err) {
       setIsAvailable(!val);
-      Alert.alert(t('error'), err.message || 'Failed to update availability');
+      Alert.alert(t('error'), err.message || t('availabilityUpdateFailed'));
     } finally {
       setTogglingAvailability(false);
     }
@@ -101,7 +167,7 @@ export default function ProfileScreen({ navigation }) {
 
   const handleSavePassword = async () => {
     if (!currentPassword || newPassword.length < 8) {
-      Alert.alert(t('error'), 'New password must be at least 8 characters.');
+      Alert.alert(t('error'), t('newPasswordMinChars'));
       return;
     }
     setSavingPassword(true);
@@ -110,9 +176,9 @@ export default function ProfileScreen({ navigation }) {
       setPasswordModal(false);
       setCurrentPassword('');
       setNewPassword('');
-      Alert.alert(t('success'), 'Password updated successfully!');
+      Alert.alert(t('success'), t('passwordUpdatedSuccess'));
     } catch (err) {
-      Alert.alert(t('error'), err.message || 'Failed to change password');
+      Alert.alert(t('error'), err.message || t('passwordUpdateFailed'));
     } finally {
       setSavingPassword(false);
     }
@@ -120,7 +186,7 @@ export default function ProfileScreen({ navigation }) {
 
   const handleSaveEmail = async () => {
     if (!emailCurrentPassword || !newEmail.includes('@')) {
-      Alert.alert(t('error'), 'Please enter a valid email address.');
+      Alert.alert(t('error'), t('validEmailRequired'));
       return;
     }
     setSavingEmail(true);
@@ -129,24 +195,270 @@ export default function ProfileScreen({ navigation }) {
       setEmailModal(false);
       setEmailCurrentPassword('');
       setNewEmail('');
-      Alert.alert(t('success'), 'Email address updated!');
+      Alert.alert(t('success'), t('emailUpdatedSuccess'));
     } catch (err) {
-      Alert.alert(t('error'), err.message || 'Failed to update email');
+      Alert.alert(t('error'), err.message || t('emailUpdateFailed'));
     } finally {
       setSavingEmail(false);
+    }
+  };
+
+  const handleOpenEditProfile = () => {
+    setEditName(caregiverName || user?.name || user?.username || '');
+    setEditPhoto(null);
+    setEditDocuments([]);
+    if (isCaregiver || user?.role === 'babysitter') {
+      apiRequest('/api/babysitter/profile')
+        .then((prof) => {
+          if (prof) {
+            setCaregiverProfile(prof);
+            if (prof.name) {
+              setEditName(prof.name);
+              setCaregiverName(prof.name);
+            }
+            if (prof.phone) setEditPhone(prof.phone);
+            if (prof.city) setEditCity(prof.city);
+            if (prof.bio) setEditBio(prof.bio);
+            if (prof.photoUrl) setCaregiverPhoto(prof.photoUrl);
+            const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
+            setExistingDocsCount(count);
+          }
+        })
+        .catch(() => {});
+    }
+    setEditModal(true);
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const uri = asset.uri;
+        const filename = asset.fileName || uri.split('/').pop() || `caregiver_${Date.now()}.jpg`;
+        const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+        setEditPhoto({ uri, name: filename, type: mimeType });
+      }
+    } catch (err) {
+      console.warn('Image picker error:', err);
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status === 'granted') {
+          const retry = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!retry.canceled && retry.assets && retry.assets.length > 0) {
+            const asset = retry.assets[0];
+            const uri = asset.uri;
+            const filename = asset.fileName || uri.split('/').pop() || `caregiver_${Date.now()}.jpg`;
+            const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+            setEditPhoto({ uri, name: filename, type: mimeType });
+            return;
+          }
+        }
+      } catch (_) {}
+      Alert.alert(t('error'), isArabic ? 'يرجى السماح بالوصول للصور لاختيار صورة الملف الشخصي' : 'Please allow photo access to choose a profile photo');
+    }
+  };
+
+  const handlePickDocument = async () => {
+    if (editDocuments.length >= 2) {
+      Alert.alert(t('error'), t('twoDocsReached'));
+      return;
+    }
+    try {
+      const remainingLimit = 2 - editDocuments.length;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingLimit,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newDocs = result.assets.slice(0, remainingLimit).map((asset, idx) => {
+          const uri = asset.uri;
+          const filename = asset.fileName || uri.split('/').pop() || `verification_${Date.now()}_${idx}.jpg`;
+          const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+          return { uri, name: filename, type: mimeType };
+        });
+        setEditDocuments((prev) => [...prev, ...newDocs].slice(0, 2));
+      }
+    } catch (err) {
+      console.warn('Document picker error:', err);
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status === 'granted') {
+          const remainingLimit = 2 - editDocuments.length;
+          const retry = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsMultipleSelection: true,
+            selectionLimit: remainingLimit,
+            quality: 0.8,
+          });
+          if (!retry.canceled && retry.assets && retry.assets.length > 0) {
+            const newDocs = retry.assets.slice(0, remainingLimit).map((asset, idx) => {
+              const uri = asset.uri;
+              const filename = asset.fileName || uri.split('/').pop() || `verification_${Date.now()}_${idx}.jpg`;
+              const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+              return { uri, name: filename, type: mimeType };
+            });
+            setEditDocuments((prev) => [...prev, ...newDocs].slice(0, 2));
+            return;
+          }
+        }
+      } catch (_) {}
+      Alert.alert(t('error'), isArabic ? 'يرجى السماح بالوصول للصور لاختيار وثائق الإثبات' : 'Please allow photo access to upload documents');
+    }
+  };
+
+  const handleRemoveDocument = (index) => {
+    setEditDocuments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  React.useEffect(() => {
+    if (route?.params?.openEdit && isAuthenticated) {
+      const timer = setTimeout(() => {
+        handleOpenEditProfile();
+        navigation?.setParams?.({ openEdit: false });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.openEdit, isAuthenticated]);
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert(t('error'), t('nameRequired'));
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      try {
+        await apiRequest('/api/user/profile', {
+          method: 'PATCH',
+          body: JSON.stringify({ name: editName.trim() }),
+        });
+      } catch (patchErr) {
+        console.warn('PATCH /api/user/profile skipped or not supported:', patchErr?.message);
+      }
+
+      if (isCaregiver) {
+        await apiRequest('/api/babysitter/profile', {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: editName.trim(),
+            phone: editPhone.trim(),
+            city: editCity.trim(),
+            bio: editBio.trim(),
+          }),
+        });
+        setCaregiverName(editName.trim());
+
+        // Upload new photo and/or verification documents if chosen
+        if (editPhoto || editDocuments.length > 0) {
+          const newPhotoUri = editPhoto?.uri;
+          if (newPhotoUri) {
+            setCaregiverPhoto(newPhotoUri);
+            setPhotoTimestamp(Date.now());
+            setPhotoError(false);
+          }
+
+          const formData = new FormData();
+          if (editPhoto) {
+            const isPng = editPhoto.name?.toLowerCase().endsWith('.png');
+            formData.append('photo', {
+              uri: editPhoto.uri,
+              name: isPng ? 'caregiver_photo.png' : 'caregiver_photo.jpg',
+              type: isPng ? 'image/png' : 'image/jpeg',
+            });
+          }
+          if (editDocuments[0]) {
+            const isPdf = editDocuments[0].name?.toLowerCase().endsWith('.pdf');
+            const isPng = editDocuments[0].name?.toLowerCase().endsWith('.png');
+            formData.append('nationalId', {
+              uri: editDocuments[0].uri,
+              name: isPdf ? 'verification_doc_1.pdf' : (isPng ? 'verification_doc_1.png' : 'verification_doc_1.jpg'),
+              type: isPdf ? 'application/pdf' : (isPng ? 'image/png' : 'image/jpeg'),
+            });
+          }
+          if (editDocuments[1]) {
+            const isPdf = editDocuments[1].name?.toLowerCase().endsWith('.pdf');
+            const isPng = editDocuments[1].name?.toLowerCase().endsWith('.png');
+            formData.append('passport', {
+              uri: editDocuments[1].uri,
+              name: isPdf ? 'verification_doc_2.pdf' : (isPng ? 'verification_doc_2.png' : 'verification_doc_2.jpg'),
+              type: isPdf ? 'application/pdf' : (isPng ? 'image/png' : 'image/jpeg'),
+            });
+          }
+
+          const docRes = await apiRequest('/api/babysitter/profile/documents', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (newPhotoUri) {
+            setCaregiverPhoto(newPhotoUri);
+          } else if (docRes?.photoUrl) {
+            setCaregiverPhoto(docRes.photoUrl);
+          }
+          setPhotoTimestamp(Date.now());
+          setPhotoError(false);
+          if (docRes?.documentsCount != null) {
+            setExistingDocsCount(docRes.documentsCount);
+          }
+        }
+      }
+      if (typeof refreshUser === 'function') {
+        await refreshUser();
+      }
+      if (isCaregiver) {
+        apiRequest('/api/babysitter/profile')
+          .then((prof) => {
+            if (prof) setCaregiverProfile(prof);
+          })
+          .catch(() => {});
+      }
+      setEditModal(false);
+      Alert.alert(t('success'), t('profileUpdatedSuccess'));
+    } catch (err) {
+      Alert.alert(t('error'), err.message || t('profileUpdateFailed'));
+    } finally {
+      setSavingProfile(false);
     }
   };
 
   const handleLogout = () => {
     Alert.alert(
       t('logout'),
-      'Are you sure you want to sign out?',
+      t('confirmSignOut'),
       [
         { text: t('close'), style: 'cancel' },
         { text: t('logout'), style: 'destructive', onPress: logout },
       ]
     );
   };
+
+  const rawPhoto = caregiverPhoto || user?.photoUrl;
+  const photoUri = rawPhoto
+    ? (rawPhoto.startsWith('file://') || rawPhoto.startsWith('content://')
+        ? rawPhoto
+        : rawPhoto.startsWith('http')
+          ? `${rawPhoto}${rawPhoto.includes('?') ? '&' : '?'}t=${photoTimestamp}`
+          : `${API_BASE}${rawPhoto}${rawPhoto.includes('?') ? '&' : '?'}t=${photoTimestamp}`)
+    : null;
+  const caregiverDisplayName = caregiverName || user?.name || '';
+  const displayName = isCaregiver
+    ? (caregiverDisplayName || (user?.username && !user.username.startsWith('google-user') ? user.username : ''))
+    : (user?.name || user?.username || t('userRole'));
 
   return (
     <ScreenWrapper>
@@ -162,32 +474,211 @@ export default function ProfileScreen({ navigation }) {
             {/* Account Card */}
             <Card style={styles.userCard}>
               <View style={[styles.userHeader, isRTL && styles.rowRTL]}>
-                <View style={styles.avatarBadge}>
-                  <Text style={styles.avatarLetter}>
-                    {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.username}>{user?.name || user?.username}</Text>
-                  <Text style={styles.userEmail}>{user?.email}</Text>
-                  <Badge
-                    label={user?.name || user?.username || (user?.role === 'babysitter' ? t('babysitter') : t('user'))}
-                    variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
-                    style={styles.roleBadge}
+                {!photoError && photoUri ? (
+                  <Image
+                    key={`${photoUri}_${photoTimestamp}`}
+                    source={{ uri: photoUri }}
+                    style={styles.avatarPhoto}
+                    onError={() => setPhotoError(true)}
                   />
+                ) : (
+                  <View style={styles.avatarBadge}>
+                    <Text style={styles.avatarLetter}>
+                      {((displayName || user?.name || user?.email || (isCaregiver ? 'C' : 'U')).charAt(0)).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.userInfo}>
+                  <Text style={styles.username}>
+                    {displayName || (isCaregiver ? (caregiverName || user?.name || '') : t('userRole'))}
+                  </Text>
+                  <Text style={styles.userEmail}>{user?.email}</Text>
+                  <TouchableOpacity
+                    style={[styles.editProfileBtn, isRTL && styles.rowRTL]}
+                    onPress={handleOpenEditProfile}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="create-outline" size={13} color={colors.white} />
+                    <Text style={styles.editProfileBtnText}>{t('editProfile')}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Card>
 
+            {/* Caregiver Profile Details View Card */}
+            {isCaregiver && (
+              <Card style={styles.caregiverProfileCard}>
+                {/* Moderation / Verification Status Banner */}
+                <View style={[
+                  styles.statusBanner,
+                  caregiverProfile?.moderationStatus === 'approved' ? styles.statusBannerApproved : styles.statusBannerPending,
+                  isRTL && styles.rowRTL
+                ]}>
+                  <Ionicons
+                    name={caregiverProfile?.moderationStatus === 'approved' ? 'checkmark-circle' : 'time'}
+                    size={20}
+                    color={caregiverProfile?.moderationStatus === 'approved' ? colors.success : '#b87700'}
+                  />
+                  <View style={{ flex: 1, marginHorizontal: 8 }}>
+                    <Text style={[
+                      styles.statusBannerTitle,
+                      { color: caregiverProfile?.moderationStatus === 'approved' ? '#1b5e20' : '#8c5000' },
+                      isRTL && styles.textRTL
+                    ]}>
+                      {caregiverProfile?.moderationStatus === 'approved'
+                        ? (t('moderation_approved') || 'Approved Caregiver')
+                        : (t('moderation_pending') || 'Pending Admin Review')}
+                    </Text>
+                    <Text style={[styles.statusBannerDesc, isRTL && styles.textRTL]}>
+                      {caregiverProfile?.moderationStatus === 'approved'
+                        ? (t('accountApprovedDesc') || 'Your profile is approved and actively visible to families on CareNest.')
+                        : (t('accountPendingDesc') || 'Your account is under review by our moderation team. You can update your details or add documents anytime.')}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Section Title */}
+                <View style={[styles.sectionHeadingRow, isRTL && styles.rowRTL, { marginTop: 14 }]}>
+                  <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+                    {t('caregiverProfileTitle') || 'Caregiver Profile Details'}
+                  </Text>
+                </View>
+
+                {/* Key Details Rows */}
+                <View style={styles.detailsGrid}>
+                  {/* City */}
+                  <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                    <View style={styles.detailIconWrapper}>
+                      <Ionicons name="location-outline" size={16} color={colors.primary} />
+                    </View>
+                    <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('city')}:</Text>
+                    <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+                      {t(caregiverProfile?.city) || caregiverProfile?.city || t('notAvailable') || 'Cairo'}
+                    </Text>
+                  </View>
+
+                  {/* Phone */}
+                  {caregiverProfile?.phone ? (
+                    <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                      <View style={styles.detailIconWrapper}>
+                        <Ionicons name="call-outline" size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('phone')}:</Text>
+                      <Text style={[styles.detailValue, isRTL && styles.textRTL]}>{caregiverProfile.phone}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Age */}
+                  {caregiverProfile?.age ? (
+                    <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                      <View style={styles.detailIconWrapper}>
+                        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('age')}:</Text>
+                      <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+                        {caregiverProfile.age} {t('years') || 'years'}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Salary */}
+                  {caregiverProfile?.monthlySalary ? (
+                    <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                      <View style={styles.detailIconWrapper}>
+                        <Ionicons name="cash-outline" size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('monthlySalary')}:</Text>
+                      <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+                        {caregiverProfile.monthlySalary} {caregiverProfile.currency || 'EGP'} / {t('perMonth') || 'month'}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Verification Documents */}
+                  <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                    <View style={styles.detailIconWrapper}>
+                      <Ionicons name="document-text-outline" size={16} color={colors.primary} />
+                    </View>
+                    <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('verificationDocs')}:</Text>
+                    <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+                      {existingDocsCount > 0
+                        ? `${existingDocsCount} ${t('verified') || 'uploaded'} ✓`
+                        : (t('noDocsYet') || 'No documents yet')}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Services Provided */}
+                {Array.isArray(caregiverProfile?.services) && caregiverProfile.services.length > 0 && (
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={[styles.subSectionTitle, isRTL && styles.textRTL]}>{t('selectServices')}</Text>
+                    <View style={[styles.servicesBadgeContainer, isRTL && styles.rowRTL]}>
+                      {caregiverProfile.services.map((srv) => (
+                        <View key={srv} style={[styles.servicePill, isRTL && styles.rowRTL]}>
+                          <Ionicons
+                            name={srv === 'cleaning' ? 'sparkles' : srv === 'cooking' ? 'restaurant' : 'heart'}
+                            size={12}
+                            color={colors.primary}
+                          />
+                          <Text style={styles.servicePillText}>{t(srv) || srv}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Bio */}
+                {caregiverProfile?.bio ? (
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={[styles.subSectionTitle, isRTL && styles.textRTL]}>{t('bio')}</Text>
+                    <Text style={[styles.bioText, isRTL && styles.textRTL]}>{caregiverProfile.bio}</Text>
+                  </View>
+                ) : null}
+
+                {/* Actions inside profile card */}
+                <View style={[styles.profileActionsRow, isRTL && styles.rowRTL]}>
+                  <TouchableOpacity
+                    style={styles.previewBtn}
+                    onPress={() => {
+                      if (caregiverProfile?._id || user?.id) {
+                        navigation.navigate('CaregiverDetails', {
+                          sitterId: caregiverProfile?._id || user?.id,
+                          sitter: {
+                            ...caregiverProfile,
+                            _id: caregiverProfile?._id || user?.id,
+                            name: caregiverDisplayName || user?.name,
+                            photoUrl: photoUri,
+                          },
+                        });
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="eye-outline" size={15} color={colors.primary} />
+                    <Text style={styles.previewBtnText}>{t('previewPublicProfile') || 'Preview Public View'}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.editCardBtn}
+                    onPress={handleOpenEditProfile}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="create-outline" size={15} color={colors.white} />
+                    <Text style={styles.editCardBtnText}>{t('editProfile')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </Card>
+            )}
+
             {/* Caregiver Quick Controls */}
             {isCaregiver && (
               <Card>
-                <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>Caregiver Controls</Text>
+                <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t('caregiverControls')}</Text>
                 <View style={[styles.toggleRow, isRTL && styles.rowRTL]}>
                   <View style={styles.toggleInfo}>
                     <Text style={styles.toggleTitle}>{t('available')}</Text>
                     <Text style={styles.toggleSub}>
-                      Accepting new family booking requests
+                      {t('acceptingRequests')}
                     </Text>
                   </View>
                   <Switch
@@ -219,7 +710,7 @@ export default function ProfileScreen({ navigation }) {
                     {caregiverReviews.slice(0, 3).map((rev, idx) => (
                       <View key={rev._id || idx} style={styles.reviewSnippet}>
                         <View style={[styles.reviewSnippetHeader, isRTL && styles.rowRTL]}>
-                          <Text style={styles.snippetUserName}>{rev.userName || 'Family Member'}</Text>
+                          <Text style={styles.snippetUserName}>{rev.userName || t('familyMember')}</Text>
                           <View style={styles.snippetStars}>
                             {[1, 2, 3, 4, 5].map((s) => (
                               <Ionicons
@@ -260,7 +751,7 @@ export default function ProfileScreen({ navigation }) {
                   onPress={() => setShowNotifModal(true)}
                   style={styles.viewAllBtn}
                 >
-                  <Text style={styles.viewAllBtnText}>{isArabic ? 'عرض الكل' : 'View All'}</Text>
+                  <Text style={styles.viewAllBtnText}>{t('viewAll')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -326,7 +817,7 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="person-circle-outline" size={60} color={colors.plum} />
             <Text style={styles.authPromptTitle}>{t('welcome')}</Text>
             <Text style={styles.authPromptSubtitle}>
-              Sign in or create an account to start booking verified caregivers or offer child care services.
+              {t('authPromptDesc')}
             </Text>
 
             <View style={styles.authButtonsRow}>
@@ -348,7 +839,7 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Preferences / Settings */}
         <Card>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>App Settings</Text>
+          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>{t('appSettings')}</Text>
 
           <TouchableOpacity
             style={[styles.menuItem, isRTL && styles.rowRTL]}
@@ -393,7 +884,7 @@ export default function ProfileScreen({ navigation }) {
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry
-              placeholder="Min 8 characters"
+              placeholder={t('min8Chars')}
               required
             />
             <Button
@@ -441,6 +932,172 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* Edit Profile Modal */}
+      <Modal visible={editModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={[styles.modalHeader, isRTL && styles.rowRTL]}>
+              <Text style={styles.modalTitle}>{t('editProfile')}</Text>
+              <TouchableOpacity onPress={() => setEditModal(false)}>
+                <Ionicons name="close-circle" size={26} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScroll}>
+              {/* Profile Photo Uploader for Caregiver */}
+              {isCaregiver && (
+                <View style={styles.modalPhotoSection}>
+                  <View style={styles.modalPhotoWrapper}>
+                    {editPhoto ? (
+                      <Image source={{ uri: editPhoto.uri }} style={styles.modalPhotoImg} />
+                    ) : photoUri ? (
+                      <Image source={{ uri: photoUri }} style={styles.modalPhotoImg} />
+                    ) : (
+                      <View style={styles.modalPhotoPlaceholder}>
+                        <Ionicons name="person" size={32} color={colors.plum} />
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      style={styles.photoBadgeBtn}
+                      onPress={handlePickPhoto}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="camera" size={14} color="#ffffff" />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.uploadPhotoBtn}
+                    onPress={handlePickPhoto}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={15} color={colors.primary} />
+                    <Text style={styles.uploadPhotoBtnText}>
+                      {editPhoto || photoUri ? t('changePhoto') : t('uploadPhoto')}
+                    </Text>
+                  </TouchableOpacity>
+                  {editPhoto && (
+                    <TouchableOpacity onPress={() => setEditPhoto(null)} style={{ marginTop: 6 }}>
+                      <Text style={styles.resetPhotoText}>
+                        {t('cancelChange')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              <Input
+                label={t('fullName')}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder={displayName}
+                required
+              />
+              {isCaregiver && (
+                <>
+                  <Input
+                    label={t('phone')}
+                    value={editPhone}
+                    onChangeText={setEditPhone}
+                    placeholder="010XXXXXXXX"
+                    keyboardType="phone-pad"
+                  />
+                  <Input
+                    label={t('city')}
+                    value={editCity}
+                    onChangeText={setEditCity}
+                    placeholder={t('Cairo')}
+                  />
+                  <Input
+                    label={t('bio')}
+                    value={editBio}
+                    onChangeText={setEditBio}
+                    placeholder={t('bioPlaceholder')}
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  {/* Verification Documents Section (Up to 2 documents) */}
+                  <View style={styles.modalDocsSection}>
+                    <View style={[styles.docsHeaderRow, isRTL && styles.rowRTL]}>
+                      <Text style={[styles.docsSectionTitle, isRTL && styles.textRTL]}>
+                        {t('verificationDocs')}
+                      </Text>
+                      <Text style={styles.docsLimitHint}>
+                        {editDocuments.length}/2
+                      </Text>
+                    </View>
+                    <Text style={[styles.docsSubtext, isRTL && styles.textRTL]}>
+                      {t('twoDocsLimit')}
+                    </Text>
+
+                    {/* Existing verified documents indicator */}
+                    {existingDocsCount > 0 && editDocuments.length === 0 && (
+                      <View style={[styles.existingDocsBadge, isRTL && styles.rowRTL]}>
+                        <Ionicons name="shield-checkmark" size={16} color="#16a34a" />
+                        <Text style={styles.existingDocsText}>
+                          {`${existingDocsCount} ${t('verifiedDocsOnFile')}`}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Newly picked documents preview list */}
+                    {editDocuments.length > 0 && (
+                      <View style={styles.docsList}>
+                        {editDocuments.map((doc, idx) => (
+                          <View key={idx} style={[styles.docItemCard, isRTL && styles.rowRTL]}>
+                            <Image source={{ uri: doc.uri }} style={styles.docThumbnail} />
+                            <View style={styles.docDetails}>
+                              <Text style={styles.docNameText} numberOfLines={1}>
+                                {doc.name || `${t('documentWord')} ${idx + 1}`}
+                              </Text>
+                              <Text style={styles.docStatusText}>
+                                {t('readyToSave')}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => handleRemoveDocument(idx)}
+                              style={styles.docRemoveBtn}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Ionicons name="trash-outline" size={18} color="#dc2626" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Add Document button */}
+                    {editDocuments.length < 2 && (
+                      <TouchableOpacity
+                        style={[styles.addDocBtn, isRTL && styles.rowRTL]}
+                        onPress={handlePickDocument}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="document-attach-outline" size={18} color={colors.primary} />
+                        <Text style={styles.addDocBtnText}>
+                          {editDocuments.length === 0 && existingDocsCount > 0
+                            ? t('uploadReplacementDocs')
+                            : t('addDocument')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    <Text style={[styles.noticeText, isRTL && styles.textRTL]}>
+                      {t('documentsNotice')}
+                    </Text>
+                  </View>
+                </>
+              )}
+              <Button
+                title={t('saveChanges')}
+                variant="plum"
+                onPress={handleSaveProfile}
+                loading={savingProfile}
+                style={styles.modalSaveBtn}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Notifications Modal */}
       <NotificationsModal
         visible={showNotifModal}
@@ -472,6 +1129,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarPhoto: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.plum,
+  },
   avatarLetter: {
     fontSize: 26,
     fontWeight: '800',
@@ -488,10 +1151,157 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 13,
     color: colors.textMuted,
-    marginVertical: 2,
+    marginTop: 2,
   },
-  roleBadge: {
-    marginTop: 4,
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.plum,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  editProfileBtnText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  caregiverProfileCard: {
+    paddingVertical: spacing.md,
+  },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: 4,
+  },
+  statusBannerApproved: {
+    backgroundColor: '#edf7ed',
+    borderColor: '#c8e6c9',
+  },
+  statusBannerPending: {
+    backgroundColor: '#fff8e1',
+    borderColor: '#ffe082',
+  },
+  statusBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  statusBannerDesc: {
+    fontSize: 11,
+    color: '#665c54',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  detailsGrid: {
+    marginTop: 6,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f7eff8',
+  },
+  detailIconWrapper: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '600',
+    width: 110,
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  subSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: 6,
+  },
+  servicesBadgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  servicePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f6ecf8',
+    borderColor: '#ebd2ef',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  servicePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.plum,
+  },
+  bioText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+    backgroundColor: '#faf6fb',
+    padding: 10,
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  profileActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+  },
+  previewBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#ffffff',
+  },
+  previewBtnText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  editCardBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    backgroundColor: colors.plum,
+  },
+  editCardBtnText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  modalSaveBtn: {
+    marginTop: spacing.md,
   },
   sectionTitle: {
     fontSize: 15,
@@ -579,6 +1389,175 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     padding: spacing.lg,
     paddingBottom: 40,
+    maxHeight: '90%',
+  },
+  modalScroll: {
+    paddingBottom: 20,
+  },
+  modalPhotoSection: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalPhotoWrapper: {
+    position: 'relative',
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: '#f1e8f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  modalPhotoImg: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+  },
+  modalPhotoPlaceholder: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: '#f1e8f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoBadgeBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  uploadPhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    backgroundColor: '#faf5ff',
+    borderWidth: 1,
+    borderColor: '#e7dbe9',
+  },
+  uploadPhotoBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  resetPhotoText: {
+    fontSize: 11,
+    color: colors.danger,
+    fontWeight: '600',
+  },
+  modalDocsSection: {
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: '#fcfafc',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#f1e8f2',
+  },
+  docsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  docsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  docsLimitHint: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  docsSubtext: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 10,
+  },
+  existingDocsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    marginBottom: 10,
+  },
+  existingDocsText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#15803d',
+  },
+  docsList: {
+    gap: 8,
+    marginBottom: 10,
+  },
+  docItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: colors.white,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: '#e7dbe9',
+    gap: 10,
+  },
+  docThumbnail: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
+    backgroundColor: '#f1e8f2',
+  },
+  docDetails: {
+    flex: 1,
+  },
+  docNameText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  docStatusText: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  docRemoveBtn: {
+    padding: 6,
+  },
+  addDocBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+    backgroundColor: '#ffffff',
+  },
+  addDocBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  noticeText: {
+    fontSize: 11,
+    color: colors.textLight,
+    marginTop: 8,
   },
   modalHeader: {
     flexDirection: 'row',

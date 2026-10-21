@@ -27,9 +27,14 @@ export const AuthProvider = ({ children }) => {
           const fresh = await apiRequest('/api/user', {
             headers: { 'x-auth-token': storedToken }
           });
-          if (fresh?.user) {
-            setUser(fresh.user);
-            await AsyncStorage.setItem('@carenest_user', JSON.stringify(fresh.user));
+          const freshUser = fresh?.user || (fresh?.id || fresh?._id ? fresh : null);
+          if (freshUser) {
+            const normalized = {
+              ...freshUser,
+              id: freshUser.id || freshUser._id,
+            };
+            setUser(normalized);
+            await AsyncStorage.setItem('@carenest_user', JSON.stringify(normalized));
           }
         } catch (e) {
           // Token might be expired
@@ -84,17 +89,23 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const registerCaregiver = async (formData) => {
+  const registerCaregiver = async (payload) => {
+    const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
     const data = await apiRequest('/api/babysitter/register', {
       method: 'POST',
-      body: formData
+      body: isForm ? payload : JSON.stringify(payload)
     });
 
     if (data.token && data.user) {
+      const caregiverUser = {
+        ...data.user,
+        role: 'babysitter',
+        name: data.user.name || (isForm ? '' : payload?.name) || data.user.username,
+      };
       setToken(data.token);
-      setUser(data.user);
+      setUser(caregiverUser);
       await AsyncStorage.setItem('@carenest_token', data.token);
-      await AsyncStorage.setItem('@carenest_user', JSON.stringify(data.user));
+      await AsyncStorage.setItem('@carenest_user', JSON.stringify(caregiverUser));
     }
     return data;
   };
