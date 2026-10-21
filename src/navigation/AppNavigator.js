@@ -48,6 +48,8 @@ function MainTabs() {
 
           if (route.name === 'HomeTab') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'ServicesTab') {
+            iconName = focused ? 'sparkles' : 'sparkles-outline';
           } else if (route.name === 'ExploreTab') {
             iconName = focused ? 'search' : 'search-outline';
           } else if (route.name === 'BookingsTab') {
@@ -64,6 +66,7 @@ function MainTabs() {
       screenListeners={({ route }) => ({
         state: () => {
           if (route.name === 'HomeTab') setCurrentScreen('Home');
+          else if (route.name === 'ServicesTab') setCurrentScreen('Services');
           else if (route.name === 'ExploreTab') setCurrentScreen('Explore');
           else if (route.name === 'BookingsTab') setCurrentScreen('Bookings');
           else if (route.name === 'SafetyTab') setCurrentScreen('Safety');
@@ -75,6 +78,11 @@ function MainTabs() {
         name="HomeTab"
         component={HomeScreen}
         options={{ tabBarLabel: t('home') }}
+      />
+      <Tab.Screen
+        name="ServicesTab"
+        component={ServicesScreen}
+        options={{ tabBarLabel: t('services') }}
       />
       {isAuthenticated && (
         <Tab.Screen
