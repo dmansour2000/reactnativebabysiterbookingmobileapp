@@ -21,11 +21,11 @@ import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, API_BASE } from '../services/api';
 
-const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
+const STATUS_FILTERS = ['all', 'pending', 'accepted', 'confirmed', 'completed', 'cancelled'];
 
 export default function BookingsScreen({ navigation }) {
-  const { t, isRTL } = useLocale();
-  const { isAuthenticated, isCaregiver } = useAuth();
+  const { t, locale, isRTL } = useLocale();
+  const { isAuthenticated, isCaregiver, user } = useAuth();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +61,25 @@ export default function BookingsScreen({ navigation }) {
     fetchBookings();
   };
 
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'pending':
+        return t('statusPending');
+      case 'accepted':
+        return t('statusAccepted');
+      case 'confirmed':
+        return t('statusConfirmed');
+      case 'completed':
+        return t('statusCompleted');
+      case 'cancelled':
+        return t('statusCancelled');
+      case 'declined':
+        return t('statusDeclined');
+      default:
+        return t(`status${status.charAt(0).toUpperCase() + status.slice(1)}`) || status;
+    }
+  };
+
   const handleCancelBooking = (bookingId) => {
     Alert.alert(
       t('cancelBooking'),
@@ -76,13 +95,13 @@ export default function BookingsScreen({ navigation }) {
                 method: 'PATCH',
                 body: JSON.stringify({
                   status: 'cancelled',
-                  cancellationReason: 'Cancelled via mobile app',
+                  cancellationReason: t('cancellationReasonDefault'),
                 }),
               });
               fetchBookings();
               Alert.alert(t('success'), t('bookingCancelledSuccess'));
             } catch (err) {
-              Alert.alert(t('error'), err.message || 'Failed to cancel');
+              Alert.alert(t('error'), err.message || t('bookingCancelFailed'));
             }
           },
         },
@@ -98,7 +117,7 @@ export default function BookingsScreen({ navigation }) {
       fetchBookings();
       Alert.alert(t('success'), t('bookingAcceptedSuccess'));
     } catch (err) {
-      Alert.alert(t('error'), err.message || 'Failed to accept booking');
+      Alert.alert(t('error'), err.message || t('bookingAcceptFailed'));
     }
   };
 
@@ -129,86 +148,100 @@ export default function BookingsScreen({ navigation }) {
   });
 
   const renderBookingCard = ({ item }) => {
+    const isCaregiverUser = isCaregiver || user?.role === 'babysitter';
     const sitter = item.babysitter || (typeof item.babysitterId === 'object' ? item.babysitterId : null);
     const sitterId = sitter?._id || (typeof item.babysitterId === 'string' ? item.babysitterId : sitter?.userId);
-    const sitterName = sitter?.name || item.babysitterName || 'Caregiver';
-    const familyName = item.family?.username || item.family?.name || (typeof item.parentId === 'object' ? item.parentId?.name || item.parentId?.username : null) || 'Family';
-    const otherParty = isCaregiver ? familyName : sitterName;
+    const sitterName = sitter?.name || item.babysitterName || t('caregiver');
+    const familyName = item.family?.username || item.family?.name || (typeof item.parentId === 'object' ? item.parentId?.name || item.parentId?.username : null) || t('family');
+    const otherParty = isCaregiverUser ? familyName : sitterName;
 
     const sitterPhotoUri = sitter?.photoUrl
       ? (sitter.photoUrl.startsWith('http') ? sitter.photoUrl : `${API_BASE}${sitter.photoUrl}`)
       : (sitterId ? `${API_BASE}/api/babysitter/photo/${sitterId}` : null);
 
     const dateObj = item.startTime ? new Date(item.startTime) : (item.startAt ? new Date(item.startAt) : null);
-    const formattedDate = dateObj && !isNaN(dateObj) ? dateObj.toLocaleDateString() : '';
-    const startHour = item.startTime ? new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    const endHour = item.endTime ? new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const dateLocale = locale === 'ar' ? 'ar-EG' : 'en-US';
+    const formattedDate = dateObj && !isNaN(dateObj)
+      ? dateObj.toLocaleDateString(dateLocale, { year: 'numeric', month: 'short', day: 'numeric' })
+      : '';
+
+    const currencyLabel = item.currency === 'USD' ? 'USD' : t('egp');
 
     return (
       <Card style={styles.bookingCard}>
         <View style={[styles.cardTop, isRTL && styles.rowRTL]}>
           <View style={[styles.participantInfoRow, isRTL && styles.rowRTL]}>
-            <TouchableOpacity
-              activeOpacity={sitterId ? 0.7 : 1}
-              onPress={() => {
-                if (sitterId) {
-                  navigation.navigate('CaregiverDetails', { sitterId, sitter });
-                }
-              }}
-              style={styles.bookingAvatarWrapper}
-            >
-              <CaregiverAvatar
-                uri={sitterPhotoUri}
-                style={styles.bookingAvatar}
-                imageStyle={styles.bookingAvatarImage}
-              />
-            </TouchableOpacity>
+            {isCaregiverUser ? (
+              <View style={styles.bookingAvatarWrapper}>
+                <CaregiverAvatar
+                  uri={null}
+                  name={otherParty}
+                  style={styles.bookingAvatar}
+                  imageStyle={styles.bookingAvatarImage}
+                />
+              </View>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={sitterId ? 0.7 : 1}
+                onPress={() => {
+                  if (sitterId) {
+                    navigation.navigate('CaregiverDetails', { sitterId, sitter });
+                  }
+                }}
+                style={styles.bookingAvatarWrapper}
+              >
+                <CaregiverAvatar
+                  uri={sitterPhotoUri}
+                  name={otherParty}
+                  style={styles.bookingAvatar}
+                  imageStyle={styles.bookingAvatarImage}
+                />
+              </TouchableOpacity>
+            )}
 
-            <View style={styles.participantTextCol}>
-              <Text style={styles.participantName}>{otherParty}</Text>
-              <Text style={styles.serviceText}>{t(item.service) || item.service}</Text>
-              {sitterId ? (
+            <View style={[styles.participantTextCol, isRTL && styles.alignRTL]}>
+              <Text style={[styles.participantName, isRTL && styles.textRTL]}>{otherParty}</Text>
+              {!isCaregiverUser && item.service ? (
+                <Text style={[styles.serviceText, isRTL && styles.textRTL]}>{t(item.service) || item.service}</Text>
+              ) : null}
+              {!isCaregiverUser && sitterId ? (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CaregiverDetails', { sitterId, sitter })}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
-                  <Text style={styles.viewProfileLink}>{t('viewProfile') || 'View Profile'} →</Text>
+                  <Text style={[styles.viewProfileLink, isRTL && styles.textRTL]}>{t('viewProfile')} →</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
 
           <Badge
-            label={t(`status${item.status.charAt(0).toUpperCase() + item.status.slice(1)}`) || item.status}
+            label={getStatusLabel(item.status)}
             variant={item.status}
           />
         </View>
 
-        <View style={styles.detailsRow}>
-          <View style={styles.metaItem}>
+        <View style={[styles.detailsRow, isRTL && styles.rowRTL]}>
+          <View style={[styles.metaItem, isRTL && styles.rowRTL]}>
             <Ionicons name="calendar" size={14} color={colors.plum} />
             <Text style={styles.metaValue}>{formattedDate}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color={colors.plum} />
-            <Text style={styles.metaValue}>{startHour} - {endHour}</Text>
           </View>
         </View>
 
         {item.address ? (
-          <View style={styles.addressRow}>
+          <View style={[styles.addressRow, isRTL && styles.rowRTL]}>
             <Ionicons name="location" size={14} color={colors.textMuted} />
-            <Text style={styles.addressText} numberOfLines={1}>{item.address}</Text>
+            <Text style={[styles.addressText, isRTL && styles.textRTL]} numberOfLines={1}>{item.address}</Text>
           </View>
         ) : null}
 
         <View style={[styles.cardBottom, isRTL && styles.rowRTL]}>
-          <View>
-            <Text style={styles.costLabel}>{t('estimatedCost')}</Text>
-            <Text style={styles.costValue}>{item.totalCost || 0} EGP</Text>
+          <View style={isRTL && styles.alignRTL}>
+            <Text style={[styles.costLabel, isRTL && styles.textRTL]}>{t('estimatedCost')}</Text>
+            <Text style={[styles.costValue, isRTL && styles.textRTL]}>{item.totalCost || 0} {currencyLabel}</Text>
           </View>
 
-          <View style={styles.actionButtonsRow}>
+          <View style={[styles.actionButtonsRow, isRTL && styles.rowRTL]}>
             {isCaregiver && item.status === 'pending' && (
               <Button
                 title={t('acceptBooking')}
@@ -218,7 +251,7 @@ export default function BookingsScreen({ navigation }) {
                 textStyle={styles.actionBtnText}
               />
             )}
-            {item.status !== 'cancelled' && item.status !== 'completed' && (
+            {item.status !== 'cancelled' && item.status !== 'completed' && item.status !== 'declined' && (
               <Button
                 title={t('cancelBooking')}
                 variant="outline"
@@ -259,7 +292,7 @@ export default function BookingsScreen({ navigation }) {
                     selectedStatus === item && styles.tabChipTextActive,
                   ]}
                 >
-                  {item === 'all' ? t('all') : t(`status${item.charAt(0).toUpperCase() + item.slice(1)}`)}
+                  {item === 'all' ? t('all') : getStatusLabel(item)}
                 </Text>
               </TouchableOpacity>
             )}
@@ -479,5 +512,11 @@ const styles = StyleSheet.create({
   },
   rowRTL: {
     flexDirection: 'row-reverse',
+  },
+  textRTL: {
+    textAlign: 'right',
+  },
+  alignRTL: {
+    alignItems: 'flex-end',
   },
 });

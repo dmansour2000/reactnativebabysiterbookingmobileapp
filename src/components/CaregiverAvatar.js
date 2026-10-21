@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Image, TouchableOpacity } from 'react-native';
-
-const DEFAULT_AVATAR = require('../../assets/icon.png');
+import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
+import { colors } from '../theme';
 
 export default function CaregiverAvatar({
   uri,
+  name,
   style,
   imageStyle,
   resizeMode = 'cover',
@@ -14,39 +14,47 @@ export default function CaregiverAvatar({
 }) {
   const [hasError, setHasError] = useState(false);
 
-  const imageSource = !hasError && uri ? { uri } : DEFAULT_AVATAR;
+  const initial = (name || 'C').charAt(0).toUpperCase();
+  const showImage = !hasError && Boolean(uri);
 
-  const content = (
-    <View style={[styles.container, style]}>
-      <Image
-        source={imageSource}
-        style={[styles.image, imageStyle]}
-        resizeMode={resizeMode}
-        onError={() => setHasError(true)}
-      />
-      {children}
-    </View>
-  );
+  const renderInner = () => {
+    if (showImage) {
+      return (
+        <Image
+          source={{ uri }}
+          style={[styles.image, imageStyle]}
+          resizeMode={resizeMode}
+          onError={() => setHasError(true)}
+        />
+      );
+    }
+
+    return (
+      <View style={[styles.fallbackContainer, imageStyle]}>
+        <Text style={styles.initialText}>{initial}</Text>
+      </View>
+    );
+  };
 
   if (onPress) {
     return (
       <TouchableOpacity
         activeOpacity={activeOpacity}
         onPress={onPress}
-        style={style}
+        style={[styles.container, style]}
       >
-        <Image
-          source={imageSource}
-          style={[styles.image, imageStyle]}
-          resizeMode={resizeMode}
-          onError={() => setHasError(true)}
-        />
+        {renderInner()}
         {children}
       </TouchableOpacity>
     );
   }
 
-  return content;
+  return (
+    <View style={[styles.container, style]}>
+      {renderInner()}
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -60,5 +68,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  fallbackContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.plum,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialText: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '800',
+  },
 });
-

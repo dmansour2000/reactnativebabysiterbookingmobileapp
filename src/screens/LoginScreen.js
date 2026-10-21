@@ -46,7 +46,14 @@ export default function LoginScreen({ navigation }) {
         });
       }
     } catch (err) {
-      Alert.alert(t('error'), err.message || t('loginFailed'));
+      const isForbiddenAdmin =
+        err?.status === 403 ||
+        err?.code === 'ADMIN_NOT_ALLOWED' ||
+        (err?.message && err.message.toLowerCase().includes('admin'));
+      const errorMsg = isForbiddenAdmin
+        ? t('adminMobileLoginNotAllowed')
+        : (err.message || t('loginFailed'));
+      Alert.alert(t('error'), errorMsg);
     } finally {
       setLoading(false);
     }
@@ -103,6 +110,10 @@ export default function LoginScreen({ navigation }) {
           <GoogleAuthButton
             flow="login"
             onSuccess={(authResult) => {
+              if (authResult?.user?.role === 'admin') {
+                Alert.alert(t('error'), t('adminMobileLoginNotAllowed'));
+                return;
+              }
               if (authResult?.user?.role === 'babysitter') {
                 navigation.reset({
                   index: 0,

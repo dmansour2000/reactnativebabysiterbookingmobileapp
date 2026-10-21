@@ -19,8 +19,20 @@ export const AuthProvider = ({ children }) => {
       const storedUser = await AsyncStorage.getItem('@carenest_user');
 
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        let parsed = null;
+        try {
+          parsed = JSON.parse(storedUser);
+        } catch (_) {}
+
+        if (parsed?.role === 'admin') {
+          await logout();
+          return;
+        }
+
+        if (parsed) {
+          setToken(storedToken);
+          setUser(parsed);
+        }
         
         // Fetch fresh profile in background
         try {
@@ -29,6 +41,10 @@ export const AuthProvider = ({ children }) => {
           });
           const freshUser = fresh?.user || (fresh?.id || fresh?._id ? fresh : null);
           if (freshUser) {
+            if (freshUser.role === 'admin') {
+              await logout();
+              return;
+            }
             const normalized = {
               ...freshUser,
               id: freshUser.id || freshUser._id,
@@ -37,8 +53,8 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.setItem('@carenest_user', JSON.stringify(normalized));
           }
         } catch (e) {
-          // Token might be expired
-          if (e.status === 401) {
+          // Token might be expired or access forbidden
+          if (e.status === 401 || e.status === 403) {
             await logout();
           }
         }
@@ -66,6 +82,13 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (data.token && data.user) {
+      if (data.user.role === 'admin') {
+        await logout();
+        const err = new Error('Admin accounts can only be accessed through the web admin dashboard.');
+        err.status = 403;
+        err.code = 'ADMIN_NOT_ALLOWED';
+        throw err;
+      }
       setToken(data.token);
       setUser(data.user);
       await AsyncStorage.setItem('@carenest_token', data.token);
@@ -125,6 +148,13 @@ export const AuthProvider = ({ children }) => {
 
   const handleOAuthSession = async (data) => {
     if (data?.token && data?.user) {
+      if (data.user.role === 'admin') {
+        await logout();
+        const err = new Error('Admin accounts can only be accessed through the web admin dashboard.');
+        err.status = 403;
+        err.code = 'ADMIN_NOT_ALLOWED';
+        throw err;
+      }
       setToken(data.token);
       setUser(data.user);
       await AsyncStorage.setItem('@carenest_token', data.token);

@@ -99,6 +99,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
           <View style={[styles.sitterHeaderRow, isRTL && styles.rowRTL]}>
             <CaregiverAvatar
               uri={photoUri}
+              name={sitter?.name}
               style={styles.headerAvatar}
               imageStyle={styles.headerAvatarImage}
             />

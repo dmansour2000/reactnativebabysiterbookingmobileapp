@@ -10,10 +10,14 @@ export default function Badge({ label, variant = 'tag', style, textStyle }) {
       case 'busy':
         return { bg: colors.busyBg, text: colors.busy, border: '#fecdd3' };
       case 'confirmed':
+      case 'accepted':
         return { bg: colors.successBg, text: colors.success, border: '#bbf7d0' };
+      case 'completed':
+        return { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' };
       case 'pending':
         return { bg: colors.warningBg, text: colors.warning, border: '#fef08a' };
       case 'cancelled':
+      case 'declined':
         return { bg: colors.dangerBg, text: colors.danger, border: '#fecaca' };
       case 'primary':
         return { bg: '#fdf2f8', text: colors.primary, border: '#fbcfe8' };

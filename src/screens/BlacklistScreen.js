@@ -26,7 +26,7 @@ import { apiRequest, API_BASE } from '../services/api';
 
 export default function BlacklistScreen() {
   const { t, locale, isRTL } = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isCaregiver, user } = useAuth();
   const isArabic = locale === 'ar';
 
   const [reports, setReports] = useState([]);
@@ -46,6 +46,11 @@ export default function BlacklistScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchReports = async () => {
+    if (isCaregiver || user?.role === 'babysitter') {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await apiRequest('/api/blacklist');
       if (Array.isArray(data)) {
@@ -84,17 +89,6 @@ export default function BlacklistScreen() {
   // Pick Caregiver Profile Photo
   const handlePickPhoto = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(
-          t('error'),
-          isArabic
-            ? 'يرجى منح صلاحية الوصول للصور لاختيار صورة مقدمة الرعاية.'
-            : 'Permission to access photos is required to upload a caregiver photo.'
-        );
-        return;
-      }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -110,30 +104,39 @@ export default function BlacklistScreen() {
         setPhoto({ uri, name: filename, type: mimeType });
       }
     } catch (err) {
-      Alert.alert(t('error'), err.message || (isArabic ? 'تعذر اختيار الصورة' : 'Failed to pick photo'));
+      console.warn('Image picker error:', err);
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.granted) {
+          const retry = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!retry.canceled && retry.assets && retry.assets.length > 0) {
+            const asset = retry.assets[0];
+            const uri = asset.uri;
+            const filename = asset.fileName || uri.split('/').pop() || 'caregiver.jpg';
+            const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+            setPhoto({ uri, name: filename, type: mimeType });
+            return;
+          }
+        }
+      } catch (_) {}
+      Alert.alert(t('error'), isArabic ? 'يرجى السماح بالوصول للصور لاختيار صورة مقدمة الرعاية' : 'Please allow photo access to select a photo');
     }
   };
 
-  // Pick Verification Documents (Max 2)
+  // Pick Verification Documents (Max 3)
   const handlePickDocument = async () => {
-    if (documents.length >= 2) {
+    if (documents.length >= 3) {
       Alert.alert(t('error'), t('maxDocumentsReached'));
       return;
     }
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(
-          t('error'),
-          isArabic
-            ? 'يرجى منح صلاحية الوصول للصور لاختيار وثائق الإثبات.'
-            : 'Permission to access photos is required to upload verification documents.'
-        );
-        return;
-      }
-
-      const remainingLimit = 2 - documents.length;
+      const remainingLimit = 3 - documents.length;
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
@@ -152,7 +155,30 @@ export default function BlacklistScreen() {
         setDocuments((prev) => [...prev, ...newDocs].slice(0, 2));
       }
     } catch (err) {
-      Alert.alert(t('error'), err.message || (isArabic ? 'تعذر اختيار الوثيقة' : 'Failed to pick document'));
+      console.warn('Document picker error:', err);
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.granted) {
+          const remainingLimit = 3 - documents.length;
+          const retry = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsMultipleSelection: true,
+            selectionLimit: remainingLimit,
+            quality: 0.8,
+          });
+          if (!retry.canceled && retry.assets && retry.assets.length > 0) {
+            const newDocs = retry.assets.slice(0, remainingLimit).map((asset, idx) => {
+              const uri = asset.uri;
+              const filename = asset.fileName || uri.split('/').pop() || `verification_${Date.now()}_${idx}.jpg`;
+              const mimeType = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+              return { uri, name: filename, type: mimeType };
+            });
+            setDocuments((prev) => [...prev, ...newDocs].slice(0, 2));
+            return;
+          }
+        }
+      } catch (_) {}
+      Alert.alert(t('error'), isArabic ? 'يرجى السماح بالوصول للصور لاختيار وثائق الإثبات' : 'Please allow photo access to upload verification documents');
     }
   };
 
@@ -198,8 +224,8 @@ export default function BlacklistScreen() {
         });
       }
 
-      // Verification Documents (Max 2)
-      documents.slice(0, 2).forEach((doc, idx) => {
+      // Verification Documents (Max 3)
+      documents.slice(0, 3).forEach((doc, idx) => {
         formData.append('documents', {
           uri: doc.uri,
           name: doc.name || `verification_doc_${idx + 1}.jpg`,
@@ -258,6 +284,27 @@ export default function BlacklistScreen() {
       </Card>
     );
   };
+
+  if (isCaregiver || user?.role === 'babysitter') {
+    return (
+      <ScreenWrapper>
+        <Header title={t('safety')} />
+        <View style={styles.restrictedContainer}>
+          <View style={styles.restrictedIconBox}>
+            <Ionicons name="shield-outline" size={48} color={colors.textLight} />
+          </View>
+          <Text style={styles.restrictedTitle}>
+            {isArabic ? 'الوصول غير متاح' : 'Access Restricted'}
+          </Text>
+          <Text style={styles.restrictedMessage}>
+            {isArabic
+              ? 'تقارير الأمان والسلامة مخصصة فقط لحسابات العائلات وأولياء الأمور.'
+              : 'Safety reports and community warnings are only accessible to family accounts.'}
+          </Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>
@@ -388,11 +435,11 @@ export default function BlacklistScreen() {
                 )}
               </View>
 
-              {/* 2. Verification Documents (Max 2) */}
+              {/* 2. Verification Documents (Max 3) */}
               <View style={styles.uploadBlock}>
                 <View style={[styles.sectionHeadingRow, isRTL && styles.rowRTL]}>
                   <Text style={[styles.uploadSectionLabel, isRTL && styles.textRTL]}>
-                    {t('verificationDocs')} ({documents.length}/2)
+                    {t('verificationDocs')} ({documents.length}/3)
                   </Text>
                 </View>
                 <Text style={[styles.uploadSectionSubtitle, isRTL && styles.textRTL]}>
@@ -415,8 +462,8 @@ export default function BlacklistScreen() {
                   </View>
                 ))}
 
-                {/* Add Document button if less than 2 */}
-                {documents.length < 2 && (
+                {/* Add Document button if less than 3 */}
+                {documents.length < 3 && (
                   <TouchableOpacity
                     style={styles.addDocButton}
                     onPress={handlePickDocument}
@@ -747,5 +794,34 @@ const styles = StyleSheet.create({
   },
   textRTL: {
     textAlign: 'right',
+  },
+  restrictedContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    marginHorizontal: spacing.md,
+  },
+  restrictedIconBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#f5eff7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  restrictedTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  restrictedMessage: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

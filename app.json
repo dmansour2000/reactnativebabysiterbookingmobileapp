@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.carenest.app",
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver relevant and personalized ads to you."
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver relevant and personalized ads to you.",
+        "NSPhotoLibraryUsageDescription": "CareNest requires access to your photo library to select a profile photo and upload verification documents."
       }
     },
     "android": {
@@ -29,6 +30,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CareNest requires access to your photo library to select a profile photo and upload verification documents."
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {

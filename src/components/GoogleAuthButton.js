@@ -22,6 +22,7 @@ const GOOGLE_CLIENT_ID = '146671912539-sctdecp31oeebjq3868adrj9eqbsjl33.apps.goo
 
 export default function GoogleAuthButton({
   flow = 'login', // 'login' | 'register'
+  role,
   onSuccess,
 }) {
   const { t, locale, isRTL } = useLocale();
@@ -117,6 +118,13 @@ export default function GoogleAuthButton({
         <div class="subtitle">${isArabic ? 'منصة كير نست المعتمدة' : 'CareNest Platform'}</div>
       </div>
       <div class="btn-wrapper" id="g_btn"></div>
+      <div id="loading_spinner" style="display:flex;flex-direction:column;align-items:center;margin-top:16px;">
+        <div style="width:26px;height:26px;border:3px solid #f3f3f3;border-top:3px solid #683f80;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="margin-top:8px;font-size:12px;color:#8b8090;">${isArabic ? 'جارٍ الاتصال بـ Google…' : 'Connecting to Google…'}</div>
+      </div>
+      <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
 
       <script>
         function handleCredentialResponse(response) {
@@ -128,26 +136,50 @@ export default function GoogleAuthButton({
           }
         }
 
-        window.onload = function () {
-          google.accounts.id.initialize({
-            client_id: "${GOOGLE_CLIENT_ID}",
-            callback: handleCredentialResponse,
-            nonce: "${currentNonce}",
-            auto_select: false
-          });
+        var attempts = 0;
+        function initGoogle() {
+          attempts++;
+          if (window.google && window.google.accounts && window.google.accounts.id) {
+            try {
+              google.accounts.id.initialize({
+                client_id: "${GOOGLE_CLIENT_ID}",
+                callback: handleCredentialResponse,
+                nonce: "${currentNonce}",
+                auto_select: false
+              });
 
-          google.accounts.id.renderButton(
-            document.getElementById("g_btn"),
-            {
-              theme: "outline",
-              size: "large",
-              text: "continue_with",
-              shape: "rectangular",
-              width: 300,
-              locale: "${locale}"
+              google.accounts.id.renderButton(
+                document.getElementById("g_btn"),
+                {
+                  theme: "outline",
+                  size: "large",
+                  text: "continue_with",
+                  shape: "rectangular",
+                  width: 300,
+                  locale: "${locale}"
+                }
+              );
+
+              var spinner = document.getElementById("loading_spinner");
+              if (spinner) spinner.style.display = "none";
+            } catch (err) {
+              console.error(err);
             }
-          );
-        };
+          } else if (attempts < 60) {
+            setTimeout(initGoogle, 80);
+          } else {
+            var spinner = document.getElementById("loading_spinner");
+            if (spinner) {
+              spinner.innerHTML = '<span style="color:#d9534f;font-size:13px;">${isArabic ? 'تعذر تحميل خدمة Google. يرجى المحاولة لاحقاً.' : 'Google service unavailable. Please retry.'}</span>';
+            }
+          }
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          initGoogle();
+        } else {
+          window.addEventListener('DOMContentLoaded', initGoogle);
+        }
       </script>
     </body>
     </html>
@@ -171,13 +203,33 @@ export default function GoogleAuthButton({
         });
 
         if (authResult.registrationRequired && authResult.registrationToken) {
-          setPendingGoogleRegistration(authResult);
+          const targetRole = role || (flow === 'register' ? (selectedRole === 'babysitter' ? 'babysitter' : 'user') : null);
+          if (role) {
+            const completeRes = await apiRequest('/api/user/oauth/complete-registration', {
+              method: 'POST',
+              body: JSON.stringify({
+                registrationToken: authResult.registrationToken,
+                role: targetRole || 'user',
+              }),
+            });
+            if (completeRes.token && completeRes.user) {
+              await handleOAuthSession(completeRes);
+              onSuccess?.(completeRes);
+              return;
+            } else {
+              throw new Error(completeRes.msg || (isArabic ? 'تعذر إتمام التسجيل' : 'Could not complete registration'));
+            }
+          }
+
+          // Delay setting pendingGoogleRegistration to let the webview modal dismiss cleanly on iOS
+          setTimeout(() => {
+            setPendingGoogleRegistration(authResult);
+          }, 500);
           return;
         }
 
         if (authResult.token && authResult.user) {
           await handleOAuthSession(authResult);
-          Alert.alert(t('success'), t('loginSuccess'));
           onSuccess?.(authResult);
         } else {
           throw new Error(authResult.msg || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed'));
@@ -281,6 +333,15 @@ export default function GoogleAuthButton({
               onMessage={onWebViewMessage}
               javaScriptEnabled={true}
               domStorageEnabled={true}
+              sharedCookiesEnabled={true}
+              thirdPartyCookiesEnabled={true}
+              setSupportMultipleWindows={false}
+              onShouldStartLoadWithRequest={(request) => {
+                if (request.url === 'about:blank') {
+                  return false;
+                }
+                return true;
+              }}
               style={{ flex: 1 }}
             />
           )}

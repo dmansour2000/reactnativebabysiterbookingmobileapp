@@ -44,10 +44,21 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
   const [reviews, setReviews] = useState(initialSitter?.reviews || []);
 
   useEffect(() => {
+    if (initialSitter?.role === 'user') {
+      Alert.alert(t('error'), 'Regular user profiles are private.');
+      navigation.goBack();
+      return;
+    }
+
     (async () => {
       try {
         const data = await apiRequest(`/api/babysitter/users/${sitterId}`);
         const loadedSitter = data?.babysitter || (data?._id ? data : null);
+        if (loadedSitter?.role === 'user') {
+          Alert.alert(t('error'), 'Regular user profiles are private.');
+          navigation.goBack();
+          return;
+        }
         if (loadedSitter) {
           setSitter(loadedSitter);
           if (Array.isArray(loadedSitter.reviews)) {
@@ -68,6 +79,10 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
       Alert.alert(t('login'), t('loginToBookNotice'));
+      return;
+    }
+    if (!isCaregiverProfile) {
+      Alert.alert(t('error'), 'Regular users cannot be rated.');
       return;
     }
     if (!reviewTitle.trim()) {
@@ -142,6 +157,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
   const isBusy = !!(sitter.hasAcceptedBooking || sitter.isBookedAndAccepted);
   const isAvailable = !isBusy;
   const servicesList = Array.isArray(sitter.services) ? sitter.services : [];
+  const isCaregiverProfile = sitter?.role !== 'user' && !sitter?.isUser;
 
   const photoUri = sitter.photoUrl
     ? (sitter.photoUrl.startsWith('http') ? sitter.photoUrl : `${API_BASE}${sitter.photoUrl}`)
@@ -182,6 +198,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             >
               <CaregiverAvatar
                 uri={photoUri}
+                name={sitter?.name}
                 style={styles.avatarImage}
                 imageStyle={styles.avatarImage}
               />
@@ -200,15 +217,17 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             </TouchableOpacity>
 
             <Text style={styles.name}>{sitter.name}</Text>
-            <Text style={styles.city}>{sitter.city || 'Cairo, Egypt'}</Text>
+            <Text style={styles.city}>{sitter.city || (locale === 'ar' ? 'القاهرة، مصر' : 'Cairo, Egypt')}</Text>
 
-            {/* Star Rating Badge */}
-            <View style={styles.ratingBadgeLarge}>
-              <Ionicons name="star" size={17} color={colors.gold} />
-              <Text style={styles.ratingLargeText}>
-                {sitter.averageRating != null ? sitter.averageRating.toFixed(1) : '5.0'} ({sitter.ratingsCount != null ? sitter.ratingsCount : 0})
-              </Text>
-            </View>
+            {/* Star Rating Badge - caregivers only */}
+            {isCaregiverProfile && (
+              <View style={styles.ratingBadgeLarge}>
+                <Ionicons name="star" size={17} color={colors.gold} />
+                <Text style={styles.ratingLargeText}>
+                  {sitter.averageRating != null ? sitter.averageRating.toFixed(1) : '5.0'} ({sitter.ratingsCount != null ? sitter.ratingsCount : 0})
+                </Text>
+              </View>
+            )}
 
             <View style={styles.badgeRow}>
               <Badge
@@ -221,8 +240,8 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
               </View>
             </View>
 
-            {/* Rate Caregiver Action for Regular Users */}
-            {isAuthenticated && user?.role === 'user' && (
+            {/* Rate Caregiver Action for Regular Users - regular users cannot be rated */}
+            {isAuthenticated && user?.role === 'user' && isCaregiverProfile && (
               <TouchableOpacity
                 style={styles.rateSitterButton}
                 onPress={() => setRateModalVisible(true)}
@@ -282,7 +301,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
               {t('ratingsAndReviews')} ({sitter.ratingsCount != null ? sitter.ratingsCount : 0})
             </Text>
-            {isAuthenticated && user?.role === 'user' && (
+            {isAuthenticated && user?.role === 'user' && isCaregiverProfile && (
               <TouchableOpacity
                 onPress={() => setRateModalVisible(true)}
                 style={styles.headerRateAction}
@@ -445,13 +464,14 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
             <View style={styles.modalImageCard}>
               <CaregiverAvatar
                 uri={photoUri}
+                name={sitter?.name}
                 style={styles.modalAvatarContainer}
                 imageStyle={styles.modalImage}
                 resizeMode="contain"
               />
             </View>
             <Text style={styles.modalSitterName}>{sitter.name}</Text>
-            <Text style={styles.modalSitterCity}>{sitter.city || 'Cairo, Egypt'}</Text>
+            <Text style={styles.modalSitterCity}>{sitter.city || (locale === 'ar' ? 'القاهرة، مصر' : 'Cairo, Egypt')}</Text>
           </View>
         </View>
       </Modal>

@@ -19,9 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
   const { t, locale, isRTL } = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isCaregiver, user } = useAuth();
 
   const isArabic = locale === 'ar';
+  const isCaregiverUser = isCaregiver || user?.role === 'babysitter';
 
   return (
     <ScreenWrapper>
@@ -65,9 +66,9 @@ export default function HomeScreen({ navigation }) {
           {/* Quick Action Button */}
           {isAuthenticated ? (
             <Button
-              title={t('explore')}
+              title={isCaregiverUser ? t('myBookings') : t('explore')}
               variant="plum"
-              onPress={() => navigation.navigate('Main', { screen: 'ExploreTab' })}
+              onPress={() => navigation.navigate('Main', { screen: isCaregiverUser ? 'BookingsTab' : 'ExploreTab' })}
               style={styles.heroButton}
             />
           ) : (

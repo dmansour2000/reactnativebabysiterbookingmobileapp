@@ -36,7 +36,7 @@ export default function Header({
 
   return (
     <View style={styles.container}>
-      <View style={[styles.inner, isRTL && styles.innerRTL]}>
+      <View style={styles.inner}>
         {/* Left Side: Menu Hamburger Button or Back Button */}
         <View style={styles.leftRow}>
           {showBack && navigation ? (
@@ -46,7 +46,7 @@ export default function Header({
               activeOpacity={0.7}
             >
               <Ionicons
-                name={isRTL ? 'arrow-forward' : 'arrow-back'}
+                name="arrow-back"
                 size={22}
                 color={colors.white}
               />
@@ -77,7 +77,7 @@ export default function Header({
           </View>
         </View>
 
-        {/* Right Side: Additional action or Side Menu trigger */}
+        {/* Right Side: Notification button placed on the right just like english version */}
         <View style={styles.rightRow}>
           {rightElement}
 

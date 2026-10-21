@@ -32,7 +32,7 @@ const Stack = createNativeStackNavigator();
 
 function MainTabs() {
   const { t } = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { setCurrentScreen } = useDrawer();
 
   return (
@@ -85,7 +85,7 @@ function MainTabs() {
         component={ServicesScreen}
         options={{ tabBarLabel: t('services') }}
       />
-      {isAuthenticated && (
+      {isAuthenticated && user?.role === 'user' && (
         <Tab.Screen
           name="ExploreTab"
           component={ExploreScreen}
@@ -99,7 +99,7 @@ function MainTabs() {
           options={{ tabBarLabel: t('bookings') }}
         />
       )}
-      {isAuthenticated && (
+      {isAuthenticated && user?.role === 'user' && (
         <Tab.Screen
           name="SafetyTab"
           component={BlacklistScreen}

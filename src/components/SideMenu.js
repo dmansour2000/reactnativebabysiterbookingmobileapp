@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -17,8 +17,8 @@ import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { useDrawer } from '../context/DrawerContext';
-import Badge from './Badge';
 import NotificationsModal from './NotificationsModal';
+import { API_BASE } from '../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
@@ -29,6 +29,12 @@ export default function SideMenu({ navigation }) {
   const { isOpen, closeDrawer, currentScreen, navigateTo } = useDrawer();
 
   const [showNotifModal, setShowNotifModal] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+
+  const displayName = user?.name || user?.username || 'User';
+  const photoUri = user?.photoUrl
+    ? (user.photoUrl.startsWith('http') ? user.photoUrl : `${API_BASE}${user.photoUrl}`)
+    : null;
 
   // Animation values - always slide from left (-DRAWER_WIDTH to 0)
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -107,11 +113,15 @@ export default function SideMenu({ navigation }) {
     },
     ...(isAuthenticated
       ? [
-          {
-            id: 'Explore',
-            title: t('explore'),
-            icon: 'search',
-          },
+          ...(user?.role === 'user'
+            ? [
+                {
+                  id: 'Explore',
+                  title: t('explore'),
+                  icon: 'search',
+                },
+              ]
+            : []),
           {
             id: 'Bookings',
             title: t('bookings'),
@@ -126,11 +136,15 @@ export default function SideMenu({ navigation }) {
               setTimeout(() => setShowNotifModal(true), 200);
             },
           },
-          {
-            id: 'Safety',
-            title: t('safety'),
-            icon: 'shield-checkmark',
-          },
+          ...(user?.role === 'user'
+            ? [
+                {
+                  id: 'Safety',
+                  title: t('safety'),
+                  icon: 'shield-checkmark',
+                },
+              ]
+            : []),
         ]
       : []),
     {
@@ -198,23 +212,26 @@ export default function SideMenu({ navigation }) {
             <View style={styles.userCard}>
               {isAuthenticated ? (
                 <View style={[styles.userRow, isRTL && styles.rowRTL]}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarLetter}>
-                      {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  {!photoError && photoUri ? (
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={styles.avatarPhoto}
+                      onError={() => setPhotoError(true)}
+                    />
+                  ) : (
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarLetter}>
+                        {(displayName || 'U').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.userDetails}>
                     <Text style={[styles.userName, isRTL && styles.textRTL]} numberOfLines={1}>
-                      {user?.name || user?.username}
+                      {displayName}
                     </Text>
                     <Text style={[styles.userEmail, isRTL && styles.textRTL]} numberOfLines={1}>
                       {user?.email}
                     </Text>
-                    <Badge
-                      label={user?.name || user?.username || (user?.role === 'babysitter' ? t('babysitter') : t('user'))}
-                      variant={user?.role === 'babysitter' ? 'primary' : 'tag'}
-                      style={styles.rolePill}
-                    />
                   </View>
                 </View>
               ) : (
@@ -431,6 +448,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarPhoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#683f80',
+  },
   avatarLetter: {
     color: '#ffffff',
     fontSize: 20,
@@ -447,11 +470,7 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 12,
     color: '#9ca3af',
-    marginVertical: 2,
-  },
-  rolePill: {
     marginTop: 2,
-    alignSelf: 'flex-start',
   },
   guestBox: {
     paddingVertical: 4,

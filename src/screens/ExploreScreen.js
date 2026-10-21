@@ -20,9 +20,36 @@ import CaregiverAvatar from '../components/CaregiverAvatar';
 import AdMobBanner from '../components/AdMobBanner';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
+import { useAuth } from '../context/AuthContext';
 import { apiRequest, API_BASE } from '../services/api';
 
-const CITIES = ['All', 'Cairo', 'Giza', 'Alexandria', 'Mansoura', 'Tanta'];
+const CITIES = [
+  'All',
+  'Cairo',
+  'Giza',
+  'Alexandria',
+  'Mansoura',
+  'Tanta',
+  'Zagazig',
+  'Ismailia',
+  'Suez',
+  'Port Said',
+  'Damietta',
+  'Aswan',
+  'Luxor',
+  'Assiut',
+  'Sohag',
+  'Qena',
+  'Beni Suef',
+  'Minya',
+  'Fayoum',
+  'Hurghada',
+  'Sharm El Sheikh',
+  'Kafr El Sheikh',
+  'Banha',
+  'Damanhour',
+  'Marsa Matrouh'
+];
 const SERVICES = [
   { id: 'all', labelKey: 'allServices' },
   { id: 'babysitting', labelKey: 'babysitting' },
@@ -32,7 +59,26 @@ const SERVICES = [
 ];
 
 export default function ExploreScreen({ navigation }) {
-  const { t, isRTL } = useLocale();
+  const { t, locale, isRTL } = useLocale();
+  const { isCaregiver, user } = useAuth();
+  const isCaregiverUser = isCaregiver || user?.role === 'babysitter';
+
+  const localizeCity = useCallback((cityName) => {
+    if (!cityName) return t('Cairo');
+    if (cityName === 'All') return t('allCities');
+
+    const direct = t(cityName);
+    if (direct && direct !== cityName) return direct;
+
+    if (cityName.includes(',')) {
+      const parts = cityName.split(',').map((p) => p.trim());
+      const localizedParts = parts.map((p) => t(p) || p);
+      return localizedParts.join(isRTL ? '، ' : ', ');
+    }
+
+    return direct || cityName;
+  }, [t, isRTL]);
+
   const [sitters, setSitters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,6 +90,11 @@ export default function ExploreScreen({ navigation }) {
   const [availableOnly, setAvailableOnly] = useState(false);
 
   const fetchSitters = useCallback(async () => {
+    if (isCaregiverUser) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const queryParams = new URLSearchParams();
       if (search.trim()) queryParams.append('search', search.trim());
@@ -103,6 +154,7 @@ export default function ExploreScreen({ navigation }) {
           <View style={[styles.cardHeader, isRTL && styles.rowRTL]}>
             <CaregiverAvatar
               uri={photoUri}
+              name={item.name}
               style={styles.avatarContainer}
               imageStyle={styles.avatarImage}
             />
@@ -120,10 +172,10 @@ export default function ExploreScreen({ navigation }) {
 
               <View style={[styles.metaRow, isRTL && styles.rowRTL]}>
                 <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.metaText}>{item.city || 'Cairo'}</Text>
+                <Text style={styles.metaText}>{localizeCity(item.city)}</Text>
                 <Text style={styles.metaDot}>•</Text>
                 <Ionicons name="briefcase-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.metaText}>{item.experience || 2}+ yrs</Text>
+                <Text style={styles.metaText}>{item.experience || 2}+ {t('years')}</Text>
               </View>
             </View>
           </View>
@@ -166,6 +218,25 @@ export default function ExploreScreen({ navigation }) {
       </Card>
     );
   };
+
+  if (isCaregiverUser) {
+    return (
+      <ScreenWrapper>
+        <Header subtitle={t('tagline')} />
+        <View style={styles.centerContainer}>
+          <Ionicons name="search-outline" size={54} color={colors.textLight} />
+          <Text style={styles.restrictedTitle}>
+            {locale === 'ar' ? 'الوصول غير متاح' : 'Access Restricted'}
+          </Text>
+          <Text style={styles.restrictedDesc}>
+            {locale === 'ar'
+              ? 'البحث عن جليسات متاح فقط لحسابات العائلات وأولياء الأمور.'
+              : 'Finding caregivers is available for family accounts only.'}
+          </Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>
@@ -212,7 +283,7 @@ export default function ExploreScreen({ navigation }) {
                   styles.filterChipText,
                   selectedCity === item && styles.filterChipTextActive
                 ]}>
-                  {item === 'All' ? t('allCities') : (t(item) || item)}
+                  {localizeCity(item)}
                 </Text>
               </TouchableOpacity>
             )}
@@ -485,5 +556,20 @@ const styles = StyleSheet.create({
   },
   textRTL: {
     textAlign: 'right',
+  },
+  restrictedTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 14,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  restrictedDesc: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 280,
+    lineHeight: 20,
   },
 });
