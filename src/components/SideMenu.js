@@ -294,7 +294,7 @@ export default function SideMenu({ navigation }) {
                       locale === 'ar' && styles.langOptionTextActive,
                     ]}
                   >
-                    العربية (افتراضي)
+                    العربية
                   </Text>
                 </TouchableOpacity>
 
