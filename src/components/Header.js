@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
@@ -45,7 +45,11 @@ export default function Header({
 
           <View style={styles.brandGroup}>
             <View style={styles.logoBadge}>
-              <Text style={styles.logoEmoji}>👶</Text>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <View>
               <Text style={styles.brandTitle}>{title || 'CareNest'}</Text>
@@ -108,15 +112,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoBadge: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  logoEmoji: {
-    fontSize: 20,
+  logoImage: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
   },
   brandTitle: {
     color: colors.white,

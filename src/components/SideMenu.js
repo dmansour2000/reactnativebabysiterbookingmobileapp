@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../theme';
@@ -139,7 +140,11 @@ export default function SideMenu({ navigation }) {
             <View style={styles.brandHeader}>
               <View style={[styles.brandRow, isRTL && styles.rowRTL]}>
                 <View style={styles.logoBadge}>
-                  <Text style={styles.logoEmoji}>👶</Text>
+                  <Image
+                    source={require('../../assets/icon.png')}
+                    style={styles.logoImage}
+                    resizeMode="cover"
+                  />
                 </View>
                 <View>
                   <Text style={styles.brandTitle}>CareNest</Text>
@@ -362,15 +367,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logoBadge: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  logoEmoji: {
-    fontSize: 24,
+  logoImage: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
   },
   brandTitle: {
     color: colors.white,
