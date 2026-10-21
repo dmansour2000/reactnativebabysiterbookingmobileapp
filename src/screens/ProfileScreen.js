@@ -23,6 +23,17 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest, API_BASE } from '../services/api';
 import NotificationsModal from '../components/NotificationsModal';
 
+const NATIONALITY_OPTIONS = [
+  'Egypt',
+  'Sudan',
+  'Nigeria',
+  'Ethiopia',
+  'Philippines',
+  'Other African',
+  'Indonesia',
+  'Other',
+];
+
 export default function ProfileScreen({ navigation, route }) {
   const { t, locale, setLocale, isRTL } = useLocale();
   const { user, isAuthenticated, isCaregiver, logout, changePassword, changeEmail, refreshUser } = useAuth();
@@ -34,6 +45,11 @@ export default function ProfileScreen({ navigation, route }) {
   const [editPhone, setEditPhone] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editBio, setEditBio] = useState('');
+  const [editNationality, setEditNationality] = useState('Egypt');
+  const [editNationalitySelection, setEditNationalitySelection] = useState('Egypt');
+  const [editOtherNationality, setEditOtherNationality] = useState('');
+  const [editMonthlySalary, setEditMonthlySalary] = useState('');
+  const [editCurrency, setEditCurrency] = useState('EGP');
   const [editPhoto, setEditPhoto] = useState(null);
   const [editDocuments, setEditDocuments] = useState([]);
   const [existingDocsCount, setExistingDocsCount] = useState(0);
@@ -220,6 +236,23 @@ export default function ProfileScreen({ navigation, route }) {
             if (prof.city) setEditCity(prof.city);
             if (prof.bio) setEditBio(prof.bio);
             if (prof.photoUrl) setCaregiverPhoto(prof.photoUrl);
+
+            // Nationality
+            const existingNat = prof.nationality || '';
+            const standardNat = NATIONALITY_OPTIONS.slice(0, -1).find(
+              (o) => o.toLowerCase() === existingNat.toLowerCase()
+            );
+            const isEgyptian = /^(egypt|egyptian)$/i.test(existingNat);
+            const selection = standardNat || (isEgyptian ? 'Egypt' : existingNat ? 'Other' : 'Egypt');
+            setEditNationalitySelection(selection);
+            setEditOtherNationality(standardNat || isEgyptian ? '' : existingNat);
+            setEditNationality(selection === 'Other' ? (existingNat || '') : selection);
+
+            // Monthly Salary & Currency
+            const currentSalary = prof.monthlySalary != null ? String(prof.monthlySalary) : (prof.hourlyRate != null ? String(prof.hourlyRate) : '');
+            setEditMonthlySalary(currentSalary);
+            setEditCurrency(prof.currency || 'EGP');
+
             const count = prof.documentsCount || (Boolean(prof.verificationDocuments?.nationalId) + Boolean(prof.verificationDocuments?.passport)) || 0;
             setExistingDocsCount(count);
           }
@@ -352,6 +385,13 @@ export default function ProfileScreen({ navigation, route }) {
       }
 
       if (isCaregiver) {
+        const finalNationality = editNationalitySelection === 'Other'
+          ? editOtherNationality.trim()
+          : editNationalitySelection;
+        const finalNationalityType = (finalNationality.toLowerCase() === 'egypt' || finalNationality.toLowerCase() === 'egyptian')
+          ? 'egyptian'
+          : 'other';
+
         await apiRequest('/api/babysitter/profile', {
           method: 'PUT',
           body: JSON.stringify({
@@ -359,6 +399,10 @@ export default function ProfileScreen({ navigation, route }) {
             phone: editPhone.trim(),
             city: editCity.trim(),
             bio: editBio.trim(),
+            nationality: finalNationality || 'Egypt',
+            nationalityType: finalNationalityType,
+            monthlySalary: editMonthlySalary.trim() === '' ? undefined : Number(editMonthlySalary),
+            currency: editCurrency || 'EGP',
           }),
         });
         setCaregiverName(editName.trim());
@@ -556,6 +600,21 @@ export default function ProfileScreen({ navigation, route }) {
                       {t(caregiverProfile?.city) || caregiverProfile?.city || t('notAvailable') || 'Cairo'}
                     </Text>
                   </View>
+
+                  {/* Nationality */}
+                  {caregiverProfile?.nationality ? (
+                    <View style={[styles.detailRow, isRTL && styles.rowRTL]}>
+                      <View style={styles.detailIconWrapper}>
+                        <Ionicons name="flag-outline" size={16} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.detailLabel, isRTL && styles.textRTL]}>{t('nationality')}:</Text>
+                      <Text style={[styles.detailValue, isRTL && styles.textRTL]}>
+                        {t(`nationality_${caregiverProfile.nationality.toLowerCase().replaceAll(' ', '_')}`) !== `nationality_${caregiverProfile.nationality.toLowerCase().replaceAll(' ', '_')}`
+                          ? t(`nationality_${caregiverProfile.nationality.toLowerCase().replaceAll(' ', '_')}`)
+                          : caregiverProfile.nationality}
+                      </Text>
+                    </View>
+                  ) : null}
 
                   {/* Phone */}
                   {caregiverProfile?.phone ? (
@@ -1000,6 +1059,84 @@ export default function ProfileScreen({ navigation, route }) {
                     placeholder="010XXXXXXXX"
                     keyboardType="phone-pad"
                   />
+
+                  {/* Nationality Section */}
+                  <View style={styles.formSection}>
+                    <Text style={[styles.fieldLabel, isRTL && styles.textRTL]}>
+                      {t('nationality')}
+                    </Text>
+                    <View style={[styles.chipsContainer, isRTL && styles.rowRTL]}>
+                      {NATIONALITY_OPTIONS.map((item) => {
+                        const active = editNationalitySelection === item;
+                        const key = item.toLowerCase().replaceAll(' ', '_');
+                        const label = t(`nationality_${key}`) !== `nationality_${key}`
+                          ? t(`nationality_${key}`)
+                          : item;
+                        return (
+                          <TouchableOpacity
+                            key={item}
+                            style={[styles.choiceChip, active && styles.choiceChipActive]}
+                            onPress={() => {
+                              setEditNationalitySelection(item);
+                              if (item !== 'Other') {
+                                setEditNationality(item);
+                              }
+                            }}
+                          >
+                            <Text style={[styles.choiceChipText, active && styles.choiceChipTextActive]}>
+                              {label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    {editNationalitySelection === 'Other' && (
+                      <Input
+                        label={t('specifyNationality')}
+                        value={editOtherNationality}
+                        onChangeText={(txt) => {
+                          setEditOtherNationality(txt);
+                          setEditNationality(txt);
+                        }}
+                        placeholder="e.g. Kenya"
+                        required
+                        style={{ marginTop: 8 }}
+                      />
+                    )}
+                  </View>
+
+                  {/* Expected Monthly Salary & Currency Row */}
+                  <View style={[styles.salaryRow, isRTL && styles.rowRTL]}>
+                    <View style={styles.salaryInputCol}>
+                      <Input
+                        label={t('monthlySalary')}
+                        value={editMonthlySalary}
+                        onChangeText={setEditMonthlySalary}
+                        placeholder="7000"
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <View style={styles.currencyCol}>
+                      <Text style={[styles.fieldLabel, isRTL && styles.textRTL]}>{t('currency')}</Text>
+                      <View style={[styles.currencyToggleRow, isRTL && styles.rowRTL]}>
+                        {['EGP', 'USD'].map((curr) => {
+                          const active = editCurrency === curr;
+                          return (
+                            <TouchableOpacity
+                              key={curr}
+                              style={[styles.currencyPill, active && styles.currencyPillActive]}
+                              onPress={() => setEditCurrency(curr)}
+                            >
+                              <Text style={[styles.currencyPillText, active && styles.currencyPillTextActive]}>
+                                {curr}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </View>
+
                   <Input
                     label={t('city')}
                     value={editCity}
@@ -1700,5 +1837,81 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginVertical: 8,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  formSection: {
+    marginBottom: spacing.sm,
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  choiceChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    backgroundColor: '#faf5ff',
+    borderWidth: 1,
+    borderColor: '#e7dbe9',
+  },
+  choiceChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  choiceChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  choiceChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  salaryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  salaryInputCol: {
+    flex: 1.2,
+  },
+  currencyCol: {
+    flex: 0.9,
+  },
+  currencyToggleRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  currencyPill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    backgroundColor: '#faf5ff',
+    borderWidth: 1,
+    borderColor: '#e7dbe9',
+  },
+  currencyPillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  currencyPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  currencyPillTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
   },
 });
