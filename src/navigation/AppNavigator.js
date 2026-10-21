@@ -82,11 +82,13 @@ function MainTabs() {
           options={{ tabBarLabel: t('bookings') }}
         />
       )}
-      <Tab.Screen
-        name="SafetyTab"
-        component={BlacklistScreen}
-        options={{ tabBarLabel: t('safety') }}
-      />
+      {isAuthenticated && (
+        <Tab.Screen
+          name="SafetyTab"
+          component={BlacklistScreen}
+          options={{ tabBarLabel: t('safety') }}
+        />
+      )}
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}

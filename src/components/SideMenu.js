@@ -114,6 +114,11 @@ export default function SideMenu({ navigation }) {
             title: t('bookings'),
             icon: 'calendar',
           },
+          {
+            id: 'Safety',
+            title: t('safety'),
+            icon: 'shield-checkmark',
+          },
         ]
       : []),
     {
@@ -130,11 +135,6 @@ export default function SideMenu({ navigation }) {
       id: 'ContactUs',
       title: t('contactUs'),
       icon: 'mail',
-    },
-    {
-      id: 'Safety',
-      title: t('safety'),
-      icon: 'shield-checkmark',
     },
     {
       id: 'Profile',

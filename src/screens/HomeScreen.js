@@ -105,22 +105,6 @@ export default function HomeScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.featureCard}
-            onPress={() => navigation.navigate('Safety')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.featureIconBox, { backgroundColor: '#f0fdf4' }]}>
-              <Ionicons name="shield-checkmark" size={24} color="#16a34a" />
-            </View>
-            <Text style={styles.featureTitle}>{t('safety')}</Text>
-            <Text style={styles.featureSubtitle}>
-              {isArabic ? 'سجل الأمان والتحقق والنزاهة' : 'Verified ID & Incident directory'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.featuresRow}>
-          <TouchableOpacity
-            style={styles.featureCard}
             onPress={() => navigation.navigate('Policies')}
             activeOpacity={0.8}
           >
@@ -132,7 +116,9 @@ export default function HomeScreen({ navigation }) {
               {isArabic ? 'سياسات المجتمع والضمانات' : 'Community rules & guidelines'}
             </Text>
           </TouchableOpacity>
+        </View>
 
+        <View style={styles.featuresRow}>
           <TouchableOpacity
             style={styles.featureCard}
             onPress={() => navigation.navigate('ContactUs')}
@@ -146,6 +132,36 @@ export default function HomeScreen({ navigation }) {
               {isArabic ? 'فريق الدعم الفني والمساعدة' : 'Support & general inquiries'}
             </Text>
           </TouchableOpacity>
+
+          {isAuthenticated ? (
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => navigation.navigate('Safety')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.featureIconBox, { backgroundColor: '#f0fdf4' }]}>
+                <Ionicons name="shield-checkmark" size={24} color="#16a34a" />
+              </View>
+              <Text style={styles.featureTitle}>{t('safety')}</Text>
+              <Text style={styles.featureSubtitle}>
+                {isArabic ? 'سجل الأمان والتحقق والنزاهة' : 'Verified ID & Incident directory'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => navigation.navigate('Login')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.featureIconBox, { backgroundColor: '#f3e8ff' }]}>
+                <Ionicons name="log-in" size={24} color="#683f80" />
+              </View>
+              <Text style={styles.featureTitle}>{t('login')}</Text>
+              <Text style={styles.featureSubtitle}>
+                {isArabic ? 'سجل دخولك للوصول لسجل الأمان' : 'Sign in to access safety directory'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Why Choose CareNest Card */}
