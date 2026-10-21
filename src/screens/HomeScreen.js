@@ -11,6 +11,7 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import AdSenseBanner from '../components/AdSenseBanner';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
@@ -197,6 +198,9 @@ export default function HomeScreen({ navigation }) {
             </Text>
           </View>
         </Card>
+
+        {/* Google AdSense Placement */}
+        <AdSenseBanner height={100} />
       </ScrollView>
     </ScreenWrapper>
   );

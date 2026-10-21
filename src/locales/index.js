@@ -99,6 +99,7 @@ const translations = {
     aboutUs: 'About Us',
     viewProfile: 'View Profile',
     tapToEnlarge: 'Tap photo to enlarge',
+    advertisement: 'Advertisement',
   },
   ar: {
     appName: 'كير نست',
@@ -196,6 +197,7 @@ const translations = {
     aboutUs: 'من نحن',
     viewProfile: 'عرض الملف الشخصي',
     tapToEnlarge: 'اضغط على الصورة للتكبير',
+    advertisement: 'إعلان',
   }
 };
 

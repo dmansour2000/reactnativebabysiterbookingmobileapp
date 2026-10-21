@@ -8,6 +8,7 @@ import {
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
 import Card from '../components/Card';
+import AdSenseBanner from '../components/AdSenseBanner';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { Ionicons } from '@expo/vector-icons';
@@ -149,6 +150,9 @@ export default function ServicesScreen({ navigation }) {
             </Card>
           ))}
         </View>
+
+        {/* Google AdSense Placement */}
+        <AdSenseBanner height={100} />
       </ScrollView>
     </ScreenWrapper>
   );
