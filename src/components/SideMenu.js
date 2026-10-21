@@ -136,8 +136,8 @@ export default function SideMenu({ navigation }) {
           ]}
         >
           <SafeAreaView style={styles.safeArea}>
-            {/* Top Close Action (No header bar) */}
-            <View style={[styles.topBar, isRTL && styles.rowRTL]}>
+            {/* Top Close Action (Always on the right side) */}
+            <View style={styles.topBar}>
               <TouchableOpacity
                 style={styles.closeBtn}
                 onPress={handleClose}
