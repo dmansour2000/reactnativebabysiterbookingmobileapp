@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Platform } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import AdSenseBanner from './AdSenseBanner';
+import { initializeAdMobWithConsent } from '../services/adConsent';
 
 export const IOS_APP_ID = 'ca-app-pub-3496568058228119~7037691726';
 export const IOS_BANNER_AD_UNIT_ID = 'ca-app-pub-3496568058228119/3868602907';
@@ -35,19 +36,20 @@ export default function AdMobBanner({
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (isNativeAdMobAvailable && mobileAds) {
-      try {
-        mobileAds()
-          .initialize()
-          .then(() => setInitialized(true))
-          .catch((err) => {
-            console.warn('AdMob initialize failed:', err?.message);
-            setInitialized(false);
-          });
-      } catch (err) {
-        console.warn('AdMob native call skipped:', err?.message);
-      }
-    }
+    let isMounted = true;
+    initializeAdMobWithConsent()
+      .then((res) => {
+        if (isMounted && res?.isNative && res?.canRequestAds !== false) {
+          setInitialized(true);
+        }
+      })
+      .catch((err) => {
+        console.warn('AdMob consent initialization error:', err?.message);
+        if (isMounted) setInitialized(false);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Use real iOS/Android Ad Unit ID in production or if forceLiveAd is set; otherwise use Google Test ID in dev

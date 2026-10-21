@@ -13,7 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.carenest.app"
+      "bundleIdentifier": "com.carenest.app",
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver relevant and personalized ads to you."
+      }
     },
     "android": {
       "package": "com.carenest.app",
@@ -30,9 +33,11 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3496568058228119~8151287836",
-          "iosAppId": "ca-app-pub-3496568058228119~7037691726"
+          "iosAppId": "ca-app-pub-3496568058228119~7037691726",
+          "userTrackingUsageDescription": "This identifier will be used to deliver relevant and personalized ads to you."
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ]
   }
 }

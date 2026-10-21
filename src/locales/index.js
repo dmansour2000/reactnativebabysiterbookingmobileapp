@@ -128,6 +128,10 @@ const translations = {
     Alexandria: 'Alexandria',
     Mansoura: 'Mansoura',
     Tanta: 'Tanta',
+    privacyAndConsent: 'Ad Privacy & Consent Settings',
+    privacyConsentDesc: 'Manage your preferences and consent choices for advertising and tracking.',
+    updatePrivacyChoices: 'Review Privacy & Consent Choices',
+    privacyChoicesUpdated: 'Your privacy preferences have been updated.',
   },
   ar: {
     appName: 'كير نست',
@@ -254,6 +258,10 @@ const translations = {
     Alexandria: 'الإسكندرية',
     Mansoura: 'المنصورة',
     Tanta: 'طنطا',
+    privacyAndConsent: 'إعدادات الخصوصية والإعلانات',
+    privacyConsentDesc: 'إدارة تفضيلاتك وخيارات الموافقة للإعلانات المخصصة والتتبع.',
+    updatePrivacyChoices: 'مراجعة خيارات الخصوصية والموافقة',
+    privacyChoicesUpdated: 'تم تحديث تفضيلات الخصوصية الخاصة بك بنجاح.',
   }
 };
 

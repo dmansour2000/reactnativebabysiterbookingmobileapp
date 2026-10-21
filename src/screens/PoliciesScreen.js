@@ -4,13 +4,16 @@ import {
   View,
   Text,
   ScrollView,
+  Alert,
 } from 'react-native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Header from '../components/Header';
 import Card from '../components/Card';
-import { radius, spacing } from '../theme';
+import Button from '../components/Button';
+import { radius, spacing, colors } from '../theme';
 import { useLocale } from '../locales';
 import { Ionicons } from '@expo/vector-icons';
+import { showPrivacyOptionsForm, isNativeAdMobAvailable } from '../services/adConsent';
 
 export default function PoliciesScreen({ navigation }) {
   const { t, locale, isRTL } = useLocale();
@@ -132,6 +135,42 @@ export default function PoliciesScreen({ navigation }) {
             </Text>
           </Card>
         ))}
+
+        {/* Ad Privacy & UMP Consent Settings */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="finger-print-outline" size={20} color="#683f80" />
+          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+            {t('privacyAndConsent')}
+          </Text>
+        </View>
+
+        <Card style={styles.privacyCard}>
+          <Text style={[styles.policyBody, isRTL && styles.textRTL, { marginBottom: 12 }]}>
+            {t('privacyConsentDesc')}
+          </Text>
+          <Button
+            title={t('updatePrivacyChoices')}
+            variant="outline"
+            icon={<Ionicons name="options-outline" size={16} color={colors.primary} />}
+            onPress={async () => {
+              if (isNativeAdMobAvailable) {
+                try {
+                  await showPrivacyOptionsForm();
+                  Alert.alert(t('success'), t('privacyChoicesUpdated'));
+                } catch (err) {
+                  Alert.alert(t('privacyAndConsent'), err?.message || 'Privacy options are currently up to date.');
+                }
+              } else {
+                Alert.alert(
+                  t('privacyAndConsent'),
+                  isArabic
+                    ? 'خيارات الخصوصية تدار تلقائياً عبر منصة Google UMP عند توفر إعلانات مخصصة في منطقتك.'
+                    : 'Privacy preferences are managed dynamically via Google UMP when personalized ads are served in your region.'
+                );
+              }
+            }}
+          />
+        </Card>
       </ScrollView>
     </ScreenWrapper>
   );
@@ -187,6 +226,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e7dbe9',
+  },
+  privacyCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(104, 63, 128, 0.18)',
   },
   policyHeading: {
     fontSize: 14,
