@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Platform } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import AdSenseBanner from './AdSenseBanner';
+
+export const IOS_APP_ID = 'ca-app-pub-3496568058228119~7037691726';
+export const IOS_BANNER_AD_UNIT_ID = 'ca-app-pub-3496568058228119/3868602907';
 
 let mobileAds, BannerAd, BannerAdSize, TestIds;
 let isNativeAdMobAvailable = false;
@@ -23,6 +26,7 @@ export { TestIds, BannerAdSize, isNativeAdMobAvailable };
 export default function AdMobBanner({
   adUnitId,
   size,
+  forceLiveAd = false,
   style,
 }) {
   const { t, isRTL } = useLocale();
@@ -44,7 +48,12 @@ export default function AdMobBanner({
     }
   }, []);
 
-  const bannerUnit = adUnitId || (TestIds ? TestIds.BANNER : 'ca-app-pub-3940256099942544/6300978111');
+  // Use real iOS Ad Unit ID in production or if forceLiveAd is set; otherwise use Google Test ID in dev
+  const defaultUnit = Platform.OS === 'ios'
+    ? ((__DEV__ && !forceLiveAd) ? (TestIds?.BANNER || 'ca-app-pub-3940256099942544/2934735716') : IOS_BANNER_AD_UNIT_ID)
+    : (TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111');
+
+  const bannerUnit = adUnitId || defaultUnit;
   const bannerSize = size || (BannerAdSize ? BannerAdSize.BANNER : 'BANNER');
 
   if (isNativeAdMobAvailable && initialized && BannerAd) {
@@ -103,3 +112,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

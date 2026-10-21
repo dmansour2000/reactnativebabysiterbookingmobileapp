@@ -5,10 +5,11 @@ import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 
 const DEFAULT_CLIENT_ID = 'ca-pub-3496568058228119';
+const DEFAULT_SLOT_ID = '3868602907';
 
 export default function AdSenseBanner({
   clientId = DEFAULT_CLIENT_ID,
-  slotId = '',
+  slotId = DEFAULT_SLOT_ID,
   format = 'auto',
   height = 100,
   style,
