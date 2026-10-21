@@ -20,9 +20,14 @@ export default function ContactUsScreen({ navigation }) {
   const isArabic = locale === 'ar';
 
   const email = 'dinamansour2000@gmail.com';
+  const webAppUrl = 'https://dmansour2000.github.io';
 
   const handleEmailPress = () => {
     Linking.openURL(`mailto:${email}?subject=CareNest Support Inquiry`);
+  };
+
+  const handleWebPress = () => {
+    Linking.openURL(webAppUrl);
   };
 
   return (
@@ -71,6 +76,30 @@ export default function ContactUsScreen({ navigation }) {
             title={isArabic ? 'إرسال بريد إلكتروني الآن' : 'Send Email Now'}
             variant="plum"
             onPress={handleEmailPress}
+            style={styles.actionBtn}
+          />
+        </Card>
+
+        {/* Web App Link Card */}
+        <Card style={styles.webCard}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="globe-outline" size={30} color="#683f80" />
+          </View>
+          <Text style={styles.webLabel}>
+            {isArabic ? 'تطبيق الويب الرسمي' : 'Official Web App'}
+          </Text>
+          <TouchableOpacity onPress={handleWebPress} activeOpacity={0.7}>
+            <Text style={styles.webUrlText}>dmansour2000.github.io</Text>
+          </TouchableOpacity>
+          <Text style={styles.webDescription}>
+            {isArabic
+              ? 'يمكنكم أيضاً الوصول إلى منصة كير نست واستخدام كافة الميزات عبر متصفح الويب من أي جهاز.'
+              : 'You can also access the CareNest platform and all its features through your web browser on any device.'}
+          </Text>
+          <Button
+            title={isArabic ? 'زيارة موقع الويب' : 'Visit Web Platform'}
+            variant="secondary"
+            onPress={handleWebPress}
             style={styles.actionBtn}
           />
         </Card>
@@ -167,6 +196,37 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     width: '100%',
+  },
+  webCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#e7dbe9',
+  },
+  webLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#786f7e',
+    marginBottom: 6,
+  },
+  webUrlText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#683f80',
+    marginBottom: 8,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
+  webDescription: {
+    fontSize: 12,
+    color: '#6c6270',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   noticeCard: {
     backgroundColor: '#ffffff',
