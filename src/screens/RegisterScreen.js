@@ -111,7 +111,28 @@ export default function RegisterScreen({ navigation }) {
       }
       Alert.alert(t('success'), t('registrationSuccessful') || 'Account created successfully!');
     } catch (err) {
-      Alert.alert(t('error'), err.message || t('registrationFailed'));
+      const rawMessage = (err?.message || err?.data?.msg || '').toLowerCase();
+      const isEmailConflict =
+        err?.status === 409 ||
+        rawMessage.includes('already registered') ||
+        rawMessage.includes('already in use') ||
+        rawMessage.includes('already exists');
+
+      if (isEmailConflict) {
+        Alert.alert(
+          t('error'),
+          t('socialAccountConflict') || t('emailAlreadyUsed'),
+          [
+            { text: t('cancel') || 'Cancel', style: 'cancel' },
+            {
+              text: t('login') || 'Log In',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(t('error'), err.message || t('registrationFailed'));
+      }
     } finally {
       setLoading(false);
     }

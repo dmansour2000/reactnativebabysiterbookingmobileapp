@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import { useNavigation } from '@react-navigation/native';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +26,7 @@ export default function GoogleAuthButton({
   role,
   onSuccess,
 }) {
+  const navigation = useNavigation();
   const { t, locale, isRTL } = useLocale();
   const { handleOAuthSession } = useAuth();
   const isArabic = locale === 'ar';
@@ -236,11 +238,58 @@ export default function GoogleAuthButton({
         }
       }
     } catch (err) {
-      console.error('Google Auth Processing Error:', err);
-      Alert.alert(t('error'), err.message || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed'));
+      handleAuthError(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAuthError = (err) => {
+    console.error('Google Auth Processing Error:', err);
+    const rawMessage = (err?.message || err?.data?.msg || err?.msg || '').toLowerCase();
+    const isConflict =
+      err?.status === 409 ||
+      rawMessage.includes('already registered') ||
+      rawMessage.includes('already in use') ||
+      rawMessage.includes('already exists') ||
+      rawMessage.includes('conflict');
+
+    const isAdminForbidden =
+      err?.status === 403 ||
+      err?.code === 'ADMIN_NOT_ALLOWED' ||
+      rawMessage.includes('admin');
+
+    if (isAdminForbidden) {
+      Alert.alert(t('error'), t('adminMobileLoginNotAllowed'));
+      return;
+    }
+
+    if (isConflict) {
+      Alert.alert(
+        t('error'),
+        t('socialAccountConflict'),
+        [
+          {
+            text: t('cancel') || 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: t('login') || 'Log In',
+            onPress: () => {
+              try {
+                navigation.navigate('Login');
+              } catch (_) {}
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    Alert.alert(
+      t('error'),
+      err.message || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed')
+    );
   };
 
   const finishGoogleRegistration = async () => {
@@ -267,7 +316,7 @@ export default function GoogleAuthButton({
         throw new Error(res.msg || (isArabic ? 'تعذر إتمام التسجيل' : 'Could not complete registration'));
       }
     } catch (err) {
-      Alert.alert(t('error'), err.message || (isArabic ? 'تعذر إتمام التسجيل' : 'Registration failed'));
+      handleAuthError(err);
     } finally {
       setCompletingRegistration(false);
     }
