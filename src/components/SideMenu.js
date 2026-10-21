@@ -18,7 +18,7 @@ import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { useDrawer } from '../context/DrawerContext';
 import NotificationsModal from './NotificationsModal';
-import { API_BASE } from '../services/api';
+import { API_BASE, apiRequest } from '../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
