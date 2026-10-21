@@ -88,6 +88,9 @@ Download CareNest today and experience trusted, professional family care at your
 
 ## 3. Store Categorization & Contact Details
 
+- **Package Name (Application ID)**: `com.carenestbooking.app`
+- **Version Code**: `1`
+- **Version Name**: `1.0.0`
 - **Category**: `Parenting` (Alternative: `Lifestyle` / `Family`)
 - **Tags**: `Babysitter`, `Child Care`, `Nanny`, `Family`, `Parenting`, `Home Care`
 - **Target Audience**: Families, Parents, Adults (18+)
@@ -173,3 +176,4 @@ When completing the **Data safety** section in Google Play Console:
 
 - **Is data encrypted in transit?** Yes (all API endpoints use HTTPS/TLS).
 - **Can users request data deletion?** Yes (via in-app account management and contact email).
+

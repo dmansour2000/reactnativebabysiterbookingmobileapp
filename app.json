@@ -13,14 +13,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.carenest.app",
+      "bundleIdentifier": "com.carenestbooking.app",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver relevant and personalized ads to you.",
         "NSPhotoLibraryUsageDescription": "CareNest requires access to your photo library to select a profile photo and upload verification documents."
       }
     },
     "android": {
-      "package": "com.carenest.app",
+      "package": "com.carenestbooking.app",
       "versionCode": 1,
       "permissions": [
         "READ_EXTERNAL_STORAGE",
