@@ -7,19 +7,15 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
+import { WebView } from 'react-native-webview';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../services/api';
 
-WebBrowser.maybeCompleteAuthSession();
-
-// The Google Web Client ID configured on backend
 const GOOGLE_CLIENT_ID = '146671912539-sctdecp31oeebjq3868adrj9eqbsjl33.apps.googleusercontent.com';
 
 export default function GoogleAuthButton({
@@ -31,11 +27,13 @@ export default function GoogleAuthButton({
   const isArabic = locale === 'ar';
 
   const [loading, setLoading] = useState(false);
+  const [showWebModal, setShowWebModal] = useState(false);
+  const [nonce, setNonce] = useState(null);
   const [pendingGoogleRegistration, setPendingGoogleRegistration] = useState(null);
-  const [selectedRole, setSelectedRole] = useState('user'); // 'user' (Family) | 'babysitter' (Caregiver)
+  const [selectedRole, setSelectedRole] = useState('user'); // 'user' | 'babysitter'
   const [completingRegistration, setCompletingRegistration] = useState(false);
 
-  // Issue nonce from backend
+  // 1. Issue nonce from backend
   const fetchNonce = async () => {
     const data = await apiRequest('/api/user/oauth/nonce', {
       method: 'POST',
@@ -47,49 +45,126 @@ export default function GoogleAuthButton({
     return data.nonce;
   };
 
-  const handleGoogleAuth = async () => {
+  const startGoogleAuth = async () => {
     setLoading(true);
     try {
-      const nonce = await fetchNonce();
+      const activeNonce = await fetchNonce();
+      setNonce(activeNonce);
+      setShowWebModal(true);
+    } catch (err) {
+      Alert.alert(t('error'), err.message || (isArabic ? 'تعذر بدء تسجيل الدخول' : 'Failed to start Google sign-in'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Configure Google OAuth Request with nonce and id_token response
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'carenest',
-        preferLocalhost: false,
-      });
+  // Google GSI HTML page rendered in webview
+  const getGsiHtml = (currentNonce) => `
+    <!DOCTYPE html>
+    <html lang="${locale}">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <title>Google Sign-In</title>
+      <script src="https://accounts.google.com/gsi/client" async defer></script>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justifyContent: center;
+          min-height: 100vh;
+          background: #ffffff;
+          padding: 24px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .logo {
+          font-size: 32px;
+          margin-bottom: 8px;
+        }
+        .title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #30243a;
+          margin-bottom: 4px;
+        }
+        .subtitle {
+          font-size: 13px;
+          color: #6c6270;
+        }
+        .btn-wrapper {
+          width: 100%;
+          max-width: 320px;
+          display: flex;
+          justifyContent: center;
+          margin-top: 10px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="logo">👶</div>
+        <div class="title">${isArabic ? 'تسجيل الدخول باستخدام Google' : 'Sign in with Google'}</div>
+        <div class="subtitle">${isArabic ? 'منصة كير نست المعتمدة' : 'CareNest Platform'}</div>
+      </div>
+      <div class="btn-wrapper" id="g_btn"></div>
 
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
-        `&response_type=id_token` +
-        `&scope=${encodeURIComponent('openid email profile')}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&nonce=${encodeURIComponent(nonce)}` +
-        `&prompt=select_account`;
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-      if (result.type === 'success' && result.url) {
-        // Parse the id_token returned in URL hash or query params
-        const urlPart = result.url.includes('#') ? result.url.split('#')[1] : result.url.split('?')[1];
-        const params = new URLSearchParams(urlPart);
-        const idToken = params.get('id_token');
-
-        if (!idToken) {
-          throw new Error(isArabic ? 'لم يتم العثور على رمز Google' : 'Google ID token was not returned');
+      <script>
+        function handleCredentialResponse(response) {
+          if (response && response.credential) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'GOOGLE_CREDENTIAL',
+              credential: response.credential
+            }));
+          }
         }
 
-        // Send to backend /api/user/oauth
+        window.onload = function () {
+          google.accounts.id.initialize({
+            client_id: "${GOOGLE_CLIENT_ID}",
+            callback: handleCredentialResponse,
+            nonce: "${currentNonce}",
+            auto_select: false
+          });
+
+          google.accounts.id.renderButton(
+            document.getElementById("g_btn"),
+            {
+              theme: "outline",
+              size: "large",
+              text: "continue_with",
+              shape: "rectangular",
+              width: 300,
+              locale: "${locale}"
+            }
+          );
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  const onWebViewMessage = async (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'GOOGLE_CREDENTIAL' && data.credential) {
+        setShowWebModal(false);
+        setLoading(true);
+
         const authResult = await apiRequest('/api/user/oauth', {
           method: 'POST',
           body: JSON.stringify({
             provider: 'google',
-            credential: idToken,
+            credential: data.credential,
             flow,
             nonce,
           }),
         });
 
-        // Check if registration requires choosing role
         if (authResult.registrationRequired && authResult.registrationToken) {
           setPendingGoogleRegistration(authResult);
           return;
@@ -102,21 +177,15 @@ export default function GoogleAuthButton({
         } else {
           throw new Error(authResult.msg || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed'));
         }
-      } else if (result.type === 'cancel' || result.type === 'dismiss') {
-        // User closed the browser window
-      } else {
-        throw new Error(isArabic ? 'تم إلغاء عملية التسجيل' : 'Authentication was cancelled');
       }
     } catch (err) {
-      console.error('Google Auth Error:', err);
-      const msg = err.message || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google authentication failed');
-      Alert.alert(t('error'), msg);
+      console.error('Google Auth Processing Error:', err);
+      Alert.alert(t('error'), err.message || (isArabic ? 'فشل تسجيل الدخول عبر Google' : 'Google sign-in failed'));
     } finally {
       setLoading(false);
     }
   };
 
-  // Complete Google Registration by selecting role
   const finishGoogleRegistration = async () => {
     if (!pendingGoogleRegistration?.registrationToken) return;
     setCompletingRegistration(true);
@@ -159,7 +228,7 @@ export default function GoogleAuthButton({
 
       <TouchableOpacity
         style={styles.googleButton}
-        onPress={handleGoogleAuth}
+        onPress={startGoogleAuth}
         disabled={loading}
         activeOpacity={0.8}
       >
@@ -178,6 +247,39 @@ export default function GoogleAuthButton({
           </View>
         )}
       </TouchableOpacity>
+
+      {/* WebView Google Identity Services Modal */}
+      <Modal
+        visible={showWebModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowWebModal(false)}
+      >
+        <SafeAreaView style={styles.webModalRoot}>
+          <View style={styles.webModalTopBar}>
+            <Text style={styles.webModalTitle}>CareNest</Text>
+            <TouchableOpacity
+              onPress={() => setShowWebModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="close" size={24} color="#30243a" />
+            </TouchableOpacity>
+          </View>
+          {nonce && (
+            <WebView
+              originWhitelist={['*']}
+              source={{
+                html: getGsiHtml(nonce),
+                baseUrl: 'https://dmansour2000.github.io',
+              }}
+              onMessage={onWebViewMessage}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              style={{ flex: 1 }}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
 
       {/* Role Selection Modal when registering with Google */}
       <Modal
@@ -335,6 +437,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#3c4043',
   },
+  webModalRoot: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  webModalTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1e8f2',
+  },
+  webModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.primary,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(26, 12, 34, 0.7)',
@@ -443,4 +563,3 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
 });
-
