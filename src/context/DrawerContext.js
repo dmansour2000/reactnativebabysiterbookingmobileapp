@@ -14,9 +14,7 @@ export const DrawerProvider = ({ children }) => {
     setCurrentScreen(screenName);
     closeDrawer();
     if (navigation) {
-      if (screenName === 'Home') {
-        navigation.navigate('Home');
-      } else if (['Explore', 'Bookings', 'Safety', 'Profile'].includes(screenName)) {
+      if (['Home', 'Explore', 'Bookings', 'Safety', 'Profile'].includes(screenName)) {
         navigation.navigate('Main', { screen: `${screenName}Tab` });
       } else {
         navigation.navigate(screenName);

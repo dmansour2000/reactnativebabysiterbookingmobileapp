@@ -46,7 +46,9 @@ function MainTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'ExploreTab') {
+          if (route.name === 'HomeTab') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'ExploreTab') {
             iconName = focused ? 'search' : 'search-outline';
           } else if (route.name === 'BookingsTab') {
             iconName = focused ? 'calendar' : 'calendar-outline';
@@ -61,13 +63,19 @@ function MainTabs() {
       })}
       screenListeners={({ route }) => ({
         state: () => {
-          if (route.name === 'ExploreTab') setCurrentScreen('Explore');
+          if (route.name === 'HomeTab') setCurrentScreen('Home');
+          else if (route.name === 'ExploreTab') setCurrentScreen('Explore');
           else if (route.name === 'BookingsTab') setCurrentScreen('Bookings');
           else if (route.name === 'SafetyTab') setCurrentScreen('Safety');
           else if (route.name === 'ProfileTab') setCurrentScreen('Profile');
         },
       })}
     >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        options={{ tabBarLabel: t('home') }}
+      />
       {isAuthenticated && (
         <Tab.Screen
           name="ExploreTab"
