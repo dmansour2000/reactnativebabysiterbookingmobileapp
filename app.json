@@ -21,6 +21,12 @@
     },
     "android": {
       "package": "com.carenest.app",
+      "versionCode": 1,
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#f1a2d2",
         "foregroundImage": "./assets/android-icon-foreground.png"
