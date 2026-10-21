@@ -17,7 +17,7 @@ import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import CaregiverAvatar from '../components/CaregiverAvatar';
-import AdSenseBanner from '../components/AdSenseBanner';
+import AdMobBanner from '../components/AdMobBanner';
 import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { apiRequest, API_BASE } from '../services/api';
@@ -270,7 +270,7 @@ export default function ExploreScreen({ navigation }) {
             }
             ListFooterComponent={
               filteredSitters.length > 0 ? (
-                <AdSenseBanner height={100} style={{ marginVertical: 12 }} />
+                <AdMobBanner style={{ marginVertical: 12 }} />
               ) : null
             }
           />
