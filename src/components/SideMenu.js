@@ -53,6 +53,7 @@ export default function SideMenu({ navigation }) {
   }, [isOpen]);
 
   const handleClose = () => {
+    // Immediately tell the context we are closing so state updates synchronously
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
@@ -64,9 +65,9 @@ export default function SideMenu({ navigation }) {
         duration: 200,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      closeDrawer();
-    });
+    ]).start();
+    // Close modal reliably
+    closeDrawer();
   };
 
   const handleNav = (screenName) => {
@@ -127,9 +128,13 @@ export default function SideMenu({ navigation }) {
     >
       <View style={styles.modalRoot}>
         {/* Semi-transparent Backdrop with Tap-To-Close */}
-        <TouchableWithoutFeedback onPress={handleClose}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={handleClose}
+        >
           <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
-        </TouchableWithoutFeedback>
+        </TouchableOpacity>
 
         {/* Animated Drawer Panel - always anchored to the left */}
         <Animated.View
@@ -145,9 +150,10 @@ export default function SideMenu({ navigation }) {
               <TouchableOpacity
                 style={styles.closeBtn}
                 onPress={handleClose}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                activeOpacity={0.5}
               >
-                <Ionicons name="close" size={22} color="#f0f2f5" />
+                <Ionicons name="close" size={24} color="#f0f2f5" />
               </TouchableOpacity>
             </View>
 
