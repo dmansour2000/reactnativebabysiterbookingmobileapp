@@ -30,14 +30,14 @@ A cross-platform React Native (Expo) mobile application for **CareNest**, matchi
   - Password recovery flow powered by the CareNest backend mailer.
   - Caregiver instant availability toggle switch.
 
-- **UI / UX Matching CareNest Web App:**
-  - Signature CareNest soft gradient (`#f1a2d2` to `#a59ff5`).
-  - CareNest magenta brand header (`#d954b2`) and deep plum buttons (`#683f80`).
-  - Translucent rounded cards with subtle shadows.
-  - Native bottom tab navigation and smooth screen transitions.
+- **Side Menu Navigation & Top Menu Button:**
+  - Responsive, animated slide-out Side Menu triggered by the menu button (`☰`) at the top of every screen.
+  - Quick navigation to Caregiver Search, Bookings, Safety Warnings, and Account Profile.
+  - Shows authenticated user dossier, avatar, and quick sign-in / registration for guests.
 
-- **Bilingual (English & Arabic):**
-  - Instant in-app language switch between English (LTR) and Arabic (RTL).
+- **Bilingual with Arabic as Default:**
+  - **Default language is Arabic (`ar`)** across the entire app with proper RTL layout alignment.
+  - Language can be toggled at any time between **العربية** and **English** using the dedicated language switcher button directly inside the Side Menu.
 
 - **Backend API Integration:**
   - Preconfigured to communicate with the deployed Express API:

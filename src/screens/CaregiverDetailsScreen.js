@@ -48,7 +48,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
   if (loading) {
     return (
       <ScreenWrapper>
-        <Header />
+        <Header showBack navigation={navigation} title={sitter?.name} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.plum} />
           <Text style={styles.loadingText}>{t('loading')}</Text>
@@ -60,7 +60,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
   if (!sitter) {
     return (
       <ScreenWrapper>
-        <Header />
+        <Header showBack navigation={navigation} title={sitter?.name} />
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>{t('noSittersFound')}</Text>
         </View>
@@ -88,7 +88,7 @@ export default function CaregiverDetailsScreen({ route, navigation }) {
 
   return (
     <ScreenWrapper>
-      <Header />
+      <Header showBack navigation={navigation} title={sitter?.name} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.profileCard}>
           <View style={styles.avatarSection}>

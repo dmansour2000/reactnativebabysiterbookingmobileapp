@@ -184,7 +184,7 @@ const translations = {
 const LocaleContext = createContext();
 
 export const LocaleProvider = ({ children }) => {
-  const [locale, setLocale] = useState('en');
+  const [locale, setLocale] = useState('ar'); // Default language is Arabic
 
   useEffect(() => {
     (async () => {
@@ -192,9 +192,11 @@ export const LocaleProvider = ({ children }) => {
         const saved = await AsyncStorage.getItem('@carenest_locale');
         if (saved && (saved === 'en' || saved === 'ar')) {
           setLocale(saved);
+        } else {
+          setLocale('ar'); // Default to Arabic
         }
       } catch (e) {
-        // Fallback to English
+        setLocale('ar');
       }
     })();
   }, []);

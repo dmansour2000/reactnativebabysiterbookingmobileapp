@@ -116,7 +116,7 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <ScreenWrapper>
-      <Header />
+      <Header showBack navigation={navigation} title={t('register')} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.card}>
           <Text style={[styles.title, isRTL && styles.textRTL]}>{t('createAccount')}</Text>

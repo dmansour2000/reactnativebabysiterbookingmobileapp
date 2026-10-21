@@ -83,7 +83,7 @@ export default function BookCaregiverScreen({ route, navigation }) {
 
   return (
     <ScreenWrapper>
-      <Header />
+      <Header showBack navigation={navigation} title={t('bookCaregiver')} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card>
           <Text style={[styles.heading, isRTL && styles.textRTL]}>{t('bookingDetails')}</Text>
