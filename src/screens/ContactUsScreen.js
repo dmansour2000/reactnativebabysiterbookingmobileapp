@@ -28,8 +28,6 @@ export default function ContactUsScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header
-        showBack
-        navigation={navigation}
         title={t('contactUs')}
         subtitle={isArabic ? 'فريق الدعم وخدمة العملاء' : 'Support & Assistance'}
       />
@@ -200,3 +198,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
 });
+

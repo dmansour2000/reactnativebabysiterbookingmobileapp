@@ -87,8 +87,6 @@ export default function ServicesScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header
-        showBack
-        navigation={navigation}
         title={t('services')}
         subtitle={isArabic ? 'خدمات الرعاية المعتمدة' : 'Verified Care Offerings'}
       />
@@ -272,3 +270,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
 });
+

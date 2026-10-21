@@ -73,8 +73,6 @@ export default function PoliciesScreen({ navigation }) {
   return (
     <ScreenWrapper>
       <Header
-        showBack
-        navigation={navigation}
         title={t('policies')}
         subtitle={isArabic ? 'سياسات وقواعد المجتمع' : 'Platform Community Policies'}
       />
@@ -205,3 +203,4 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 });
+
