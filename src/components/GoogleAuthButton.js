@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
@@ -15,6 +16,7 @@ import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../services/api';
+import { APP_ICON_BASE64 } from '../assets/iconBase64';
 
 const GOOGLE_CLIENT_ID = '146671912539-sctdecp31oeebjq3868adrj9eqbsjl33.apps.googleusercontent.com';
 
@@ -82,9 +84,12 @@ export default function GoogleAuthButton({
           text-align: center;
           margin-bottom: 24px;
         }
-        .logo {
-          font-size: 32px;
-          margin-bottom: 8px;
+        .logo-img {
+          width: 58px;
+          height: 58px;
+          border-radius: 14px;
+          margin-bottom: 12px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .title {
           font-size: 18px;
@@ -107,7 +112,7 @@ export default function GoogleAuthButton({
     </head>
     <body>
       <div class="header">
-        <div class="logo">👶</div>
+        <img class="logo-img" src="${APP_ICON_BASE64}" alt="CareNest" />
         <div class="title">${isArabic ? 'تسجيل الدخول باستخدام Google' : 'Sign in with Google'}</div>
         <div class="subtitle">${isArabic ? 'منصة كير نست المعتمدة' : 'CareNest Platform'}</div>
       </div>
@@ -292,7 +297,11 @@ export default function GoogleAuthButton({
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View style={styles.modalBadge}>
-                <Ionicons name="logo-google" size={24} color="#EA4335" />
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.modalAppIcon}
+                  resizeMode="cover"
+                />
               </View>
               <Text style={styles.modalTitle}>
                 {isArabic ? 'أكملي إنشاء حسابك في كير نست' : 'Complete your CareNest account'}
@@ -479,13 +488,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalBadge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fef2f2',
+    width: 58,
+    height: 58,
+    borderRadius: radius.md,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+    overflow: 'hidden',
+  },
+  modalAppIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: radius.md,
   },
   modalTitle: {
     fontSize: 17,
