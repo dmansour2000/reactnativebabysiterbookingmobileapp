@@ -23,9 +23,11 @@
       "package": "com.carenestbooking.app",
       "versionCode": 1,
       "permissions": [
-        "READ_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
-        "CAMERA"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#f1a2d2",
@@ -51,6 +53,15 @@
         }
       ],
       "expo-tracking-transparency"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b151a442-a64f-45df-96e0-31ee10b5570c"
+      }
+    }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-3496568058228119~8151287836",
+    "ios_app_id": "ca-app-pub-3496568058228119~7037691726"
   }
 }
