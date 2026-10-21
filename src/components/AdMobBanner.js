@@ -6,6 +6,8 @@ import AdSenseBanner from './AdSenseBanner';
 
 export const IOS_APP_ID = 'ca-app-pub-3496568058228119~7037691726';
 export const IOS_BANNER_AD_UNIT_ID = 'ca-app-pub-3496568058228119/3868602907';
+export const ANDROID_APP_ID = 'ca-app-pub-3496568058228119~8151287836';
+export const ANDROID_BANNER_AD_UNIT_ID = 'ca-app-pub-3496568058228119/4483505561';
 
 let mobileAds, BannerAd, BannerAdSize, TestIds;
 let isNativeAdMobAvailable = false;
@@ -48,10 +50,10 @@ export default function AdMobBanner({
     }
   }, []);
 
-  // Use real iOS Ad Unit ID in production or if forceLiveAd is set; otherwise use Google Test ID in dev
+  // Use real iOS/Android Ad Unit ID in production or if forceLiveAd is set; otherwise use Google Test ID in dev
   const defaultUnit = Platform.OS === 'ios'
     ? ((__DEV__ && !forceLiveAd) ? (TestIds?.BANNER || 'ca-app-pub-3940256099942544/2934735716') : IOS_BANNER_AD_UNIT_ID)
-    : (TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111');
+    : ((__DEV__ && !forceLiveAd) ? (TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111') : ANDROID_BANNER_AD_UNIT_ID);
 
   const bannerUnit = adUnitId || defaultUnit;
   const bannerSize = size || (BannerAdSize ? BannerAdSize.BANNER : 'BANNER');
