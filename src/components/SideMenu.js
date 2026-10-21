@@ -96,11 +96,15 @@ export default function SideMenu({ navigation }) {
       title: t('explore'),
       icon: 'search',
     },
-    {
-      id: 'Bookings',
-      title: t('bookings'),
-      icon: 'calendar',
-    },
+    ...(isAuthenticated
+      ? [
+          {
+            id: 'Bookings',
+            title: t('bookings'),
+            icon: 'calendar',
+          },
+        ]
+      : []),
     {
       id: 'Safety',
       title: t('safety'),

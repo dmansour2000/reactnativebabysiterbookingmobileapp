@@ -17,6 +17,7 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 import SideMenu from '../components/SideMenu';
 import { DrawerProvider, useDrawer } from '../context/DrawerContext';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
 import { useLocale } from '../locales';
 
@@ -27,6 +28,7 @@ const Stack = createNativeStackNavigator();
 
 function MainTabs() {
   const { t } = useLocale();
+  const { isAuthenticated } = useAuth();
   const { setCurrentScreen } = useDrawer();
 
   return (
@@ -67,11 +69,13 @@ function MainTabs() {
         component={ExploreScreen}
         options={{ tabBarLabel: t('explore') }}
       />
-      <Tab.Screen
-        name="BookingsTab"
-        component={BookingsScreen}
-        options={{ tabBarLabel: t('bookings') }}
-      />
+      {isAuthenticated && (
+        <Tab.Screen
+          name="BookingsTab"
+          component={BookingsScreen}
+          options={{ tabBarLabel: t('bookings') }}
+        />
+      )}
       <Tab.Screen
         name="SafetyTab"
         component={BlacklistScreen}
