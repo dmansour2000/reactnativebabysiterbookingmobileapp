@@ -2,6 +2,9 @@
 
 A cross-platform React Native (Expo) mobile application for **CareNest**, matching the design system, colors, and user experience of the CareNest web frontend.
 
+  <p>
+   <img src="https://github.com/dmansour2000/reactnativebabysiterbookingmobileapp/blob/main/store-assets/screenshots/01-home-screen-en.png", width="150" hspace="4"/>
+   </p>
 ---
 
 ## Features
