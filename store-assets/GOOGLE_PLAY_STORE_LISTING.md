@@ -107,7 +107,8 @@ All store graphic assets are saved in `mobile/store-assets/`:
 | Asset Type | File Path | Dimensions | Requirements |
 |---|---|---|---|
 | **App Icon** | `mobile/store-assets/icon-512.png` | 512 x 512 px | 32-bit PNG, max 1024 KB |
-| **Feature Graphic** | `mobile/store-assets/feature-graphic.png` | 1024 x 500 px | PNG / JPEG, max 15 MB |
+| **Feature Graphic (PNG)** | `mobile/store-assets/feature-graphic.png` | 1024 x 500 px | 24-bit PNG (no alpha), compliant |
+| **Feature Graphic (JPG)** | `mobile/store-assets/feature-graphic.jpg` | 1024 x 500 px | JPEG (no alpha), compliant |
 | **Screenshot 1 (EN)** | `mobile/store-assets/screenshots/01-home-screen-en.png` | 1080 x 2160 px | Verified Care Platform Home (English) |
 | **Screenshot 2 (AR)** | `mobile/store-assets/screenshots/02-home-screen-ar.png` | 1080 x 2160 px | Verified Care Platform Home (Arabic RTL) |
 | *Originals* | `mobile/store-assets/screenshots/original/` | 460 x 1024 px | Raw device screenshots |
