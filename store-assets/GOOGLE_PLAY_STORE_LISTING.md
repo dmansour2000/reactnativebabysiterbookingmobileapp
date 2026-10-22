@@ -89,7 +89,7 @@ CareNest makes family care scheduling transparent, organized, and straightforwar
 ## 3. Store Categorization & Contact Details
 
 - **Package Name (Application ID)**: `com.carenestbooking.app`
-- **Version Code**: `2`
+- **Version Code**: `3`
 - **Version Name**: `1.0.0`
 - **Category**: `Parenting` (Alternative: `Lifestyle` / `Family`)
 - **Tags**: `Babysitter`, `Child Care`, `Nanny`, `Family`, `Parenting`, `Home Care`
