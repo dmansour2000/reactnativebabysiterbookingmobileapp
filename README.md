@@ -1,5 +1,9 @@
 # CareNest Mobile App (iOS & Android)
 
+[![Google Play](https://img.shields.io/badge/Google_Play-CareNest-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.carenestbooking.app)
+
+Official Google Play Store link: **[https://play.google.com/store/apps/details?id=com.carenestbooking.app](https://play.google.com/store/apps/details?id=com.carenestbooking.app)**
+
 A cross-platform React Native (Expo) mobile application for **CareNest**, matching the design system, colors, and user experience of the CareNest web frontend.
 
   <p>
