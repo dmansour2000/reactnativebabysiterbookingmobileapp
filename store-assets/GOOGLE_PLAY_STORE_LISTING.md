@@ -22,32 +22,32 @@ Both formats can be produced using either **EAS Build** (cloud) or **Android Stu
 - **App Name** *(max 30 characters)*:
   `CareNest - Babysitter Booking`
 - **Short Description** *(max 80 characters)*:
-  `Book trusted, verified babysitters and caregivers for your family with ease.`
+  `Find and book babysitters and caregivers with transparent profiles and reviews.`
 - **Full Description** *(max 4000 characters)*:
 ```
-CareNest connects families with certified, trustworthy babysitters and caregivers. Whether you need reliable childcare, elderly support, cooking, or home assistance, CareNest offers a secure and seamless booking experience.
+CareNest is a community marketplace app designed to help families find, connect with, and book local babysitters and caregivers. Whether you are a parent looking for childcare assistance or a caregiver offering your babysitting services, CareNest provides a dedicated platform to coordinate bookings, manage schedules, and communicate preferences.
 
-KEY FEATURES:
+WHAT YOU CAN DO WITH CARENEST:
 
-👶 Verified Caregivers & Moderation
-Every caregiver undergoes identity verification, including national ID and background checks before profile approval. Review credentials, ratings, and bios with full transparency.
+FOR PARENTS AND FAMILIES:
+• Browse Caregiver Profiles: View available babysitters and caregivers with detailed profiles, experience summaries, bios, photos, and hourly rates.
+• Filter and Search: Narrow down search results by location, city, availability, and specific services offered (childcare, tutoring, meal prep, or general home assistance).
+• Submit Booking Requests: Select your preferred caregiver, choose booking dates, set start and end times, and add specific instructions or care notes.
+• Track Booking Status: Follow the status of your requests in real-time (Pending, Confirmed, Completed, or Cancelled).
+• Ratings and Community Feedback: Read reviews and ratings from other families to make informed decisions for your household.
 
-📅 Instant & Flexible Bookings
-Browse verified babysitters by location, availability, hourly rates, and specialized services (pediatric care, elderly support, meal preparation, housekeeping). Submit booking requests directly with custom dates, timings, and notes.
+FOR CAREGIVERS AND BABYSITTERS:
+• Profile Management: Create a detailed caregiver profile showcasing your experience, qualifications, languages spoken, and bio.
+• Set Your Availability & Rates: Define your hourly rates and specify the services you provide.
+• Manage Incoming Bookings: Receive and review booking requests from families, with the ability to accept or decline based on your schedule.
+• Track Your Schedule: Keep all your upcoming and past bookings organized in one central dashboard.
 
-⭐ Ratings & Verified Reviews
-Read real experiences and reviews left by other families to choose the perfect caregiver for your home.
+ADDITIONAL APP FEATURES:
+• Bilingual Interface: Full native support for both English and Arabic with complete Right-to-Left (RTL) navigation.
+• In-App Notifications: Receive timely updates regarding booking status changes and important account alerts.
+• User Account Controls: Easily manage your profile details, password, and account preferences directly within the app settings.
 
-🔔 Real-Time Notifications
-Receive instant status updates when your booking request is accepted, updated, or completed.
-
-🛡️ Community Trust & Safety Reporting
-CareNest enforces a zero-tolerance policy for safety violations. Users can securely submit confidential incident reports with supporting documentation directly to platform administrators.
-
-🌐 Bilingual Experience
-Full support for both Arabic and English with seamless Right-to-Left (RTL) navigation and language switching.
-
-Download CareNest today and experience trusted, professional family care at your fingertips!
+CareNest makes family care scheduling transparent, organized, and straightforward.
 ```
 
 ---
@@ -56,32 +56,32 @@ Download CareNest today and experience trusted, professional family care at your
 - **اسم التطبيق** *(بحد أقصى 30 حرفاً)*:
   `كير نست - حجز جليسات الأطفال`
 - **الوصف القصير** *(بحد أقصى 80 حرفاً)*:
-  `احجز جليسات أطفال ومقدمات رعاية موثوقات ومعتمدات لعائلتك بسهولة وأمان.`
+  `ابحث عن جليسات الأطفال ومقدمات الرعاية وتواصل معهن لحجز المواعيد بسهولة.`
 - **الوصف الكامل** *(بحد أقصى 4000 حرف)*:
 ```
-تطبيق كير نست (CareNest) يربط العائلات بنخبة من أفضل جليسات الأطفال ومقدمات الرعاية الموثوقات والمعتمدات. سواء كنت تبحثين عن رعاية أطفال موثوقة، رعاية كبار السن، المساعدة المنزلية أو الطبخ، يوفر كير نست تجربة حجز آمنة وسلسة.
+تطبيق كير نست (CareNest) هو منصة مخصصة لمساعدة العائلات في البحث عن جليسات الأطفال ومقدمات الرعاية المحليات والتواصل معهن وحجز خدماتهن. يوفر التطبيق تجربة منظمة ومريحة للتنسيق بين أولياء الأمور ومقدمات الرعاية وإدارة المواعيد بكل شفافية.
 
-أبرز مميزات التطبيق:
+ما الذي يمكنك القيام به عبر تطبيق كير نست:
 
-👶 جليسات معتمدات ومراجعة شاملة
-تخضع جميع مقدمات الرعاية لفحص دقيق للوثائق الرسمية وبطاقات الهوية قبل اعتماد الحسابات. يمكنك الاطلاع على الملف الشخصي، التقييمات، والنبذة التعريفية بكل شفافية.
+لأولياء الأمور والعائلات:
+• تصفح الملفات الشخصية: استعراض جليسات الأطفال المتاحات مع تفاصيل الخبرات السابقة، النبذة التعريفية، الصور، وأسعار الساعة.
+• البحث والتصفية: إمكانية تصفية النتائج حسب المدينة، النطاق الجغرافي، التوفر، والخدمات المطلوبة (رعاية أطفال، مساعدة في الواجبات المدرسية، تحضير وجبات، أو المساعدة المنزلية).
+• إرسال طلبات الحجز: اختيار مقدمة الرعاية المناسبة، وتحديد التاريخ، ووقت البدء والانتهاء، وإضافة أي ملاحظات أو تعليمات خاصة.
+• متابعة حالة الحجوزات: متابعة حالة كل طلب مباشرة (قيد الانتظار، مؤكد، مكتمل، أو ملغي).
+• التقييمات والآراء: قراءة تجارب وتقييمات العائلات السابقة للمساعدة في اختيار الأنسب لمنزلك.
 
-📅 حجز فوري ومرن
-تصفح الجليسات المتاحات حسب المدينة، السعر، والخدمات المطلوبة (مجالسة أطفال، رعاية مسنين، تحضير وجبات، نظافة منزلية). أرسل طلب الحجز بمرونة تامة مع تحديد التواريخ والملاحظات الخاصة.
+لمقدمات الرعاية وجليسات الأطفال:
+• إدارة الملف الشخصي: إنشاء ملف تعريفي يوضح الخبرات، المؤهلات، اللغات، ونبذة شخصية.
+• تحديد الأسعار والخدمات: تحديد السعر بالساعة ونوعية الخدمات المقدمة وفقاً لتخصصك.
+• استقبال وإدارة الطلبات: استلام طلبات الحجز من العائلات مع إمكانية قبول الطلب أو رفضه بحسب جدولك.
+• تنظيم المواعيد: لوحة تحكم تعرض الحجوزات القادمة والسابقة بطريقة منظمة وواضحة.
 
-⭐ تقييمات وآراء حقيقية
-اطلع على آراء وتجارب الأسر السابقة مع كل جليسة لتختاري الأنسب لأطفالك وعائلتك بكل راحة بال.
+مميزات إضافية في التطبيق:
+• واجهة ثنائية اللغة: دعم كامل للغتين العربية والإنجليزية مع دعم متكامل للاتجاه من اليمين إلى اليسار (RTL).
+• تنبيهات وإشعارات: إشعارات فورية عند تحديث حالة الحجز أو وصول تنبيهات متعلقة بالحساب.
+• تحكم كامل بالحساب: إمكانية تعديل البيانات الشخصية، كلمة المرور، وإعدادات الحساب بسهولة داخل التطبيق.
 
-🔔 إشعارات وتنبيهات فورية
-تابعي حالة طلبات الحجز أولاً بأول فور قبولها أو تحديثها من قبل مقدمة الرعاية.
-
-🛡️ أمان المجتمع وسجل الملاحظات
-يلتزم كير نست بأعلى معايير السلامة والأمان، مع إمكانية تقديم بلاغات سرية وموثقة لفريق الإدارة مباشرة لضمان حماية جميع أفراد المجتمع.
-
-🌐 دعم كامل للغتين العربية والإنجليزية
-واجهة مصممة خصيصاً لتناسب المستخدم العربي مع دعم كامل للاتجاه من اليمين إلى اليسار (RTL) والتبديل الفوري بين اللغتين.
-
-حملي كير نست الآن واستمتعي برعاية آمنة وموثوقة لعائلتك في أي وقت!
+يهدف كير نست إلى جعل تنسيق الرعاية الأسرية تجربة آمنة ومنظمة وسهلة للجميع.
 ```
 
 ---
