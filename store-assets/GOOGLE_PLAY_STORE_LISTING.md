@@ -89,7 +89,7 @@ Download CareNest today and experience trusted, professional family care at your
 ## 3. Store Categorization & Contact Details
 
 - **Package Name (Application ID)**: `com.carenestbooking.app`
-- **Version Code**: `1`
+- **Version Code**: `2`
 - **Version Name**: `1.0.0`
 - **Category**: `Parenting` (Alternative: `Lifestyle` / `Family`)
 - **Tags**: `Babysitter`, `Child Care`, `Nanny`, `Family`, `Parenting`, `Home Care`
