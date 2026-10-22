@@ -17,7 +17,6 @@ import { colors, radius, spacing } from '../theme';
 import { useLocale } from '../locales';
 import { useAuth } from '../context/AuthContext';
 import { useDrawer } from '../context/DrawerContext';
-import NotificationsModal from './NotificationsModal';
 import { API_BASE, apiRequest } from '../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -29,7 +28,6 @@ export default function SideMenu({ navigation }) {
   const { isOpen, closeDrawer, currentScreen, navigateTo } = useDrawer();
   const isArabic = locale === 'ar';
 
-  const [showNotifModal, setShowNotifModal] = useState(false);
   const [photoError, setPhotoError] = useState(false);
   const [caregiverInfo, setCaregiverInfo] = useState({ name: '', photoUrl: '' });
 
@@ -158,15 +156,6 @@ export default function SideMenu({ navigation }) {
             id: 'Bookings',
             title: t('bookings'),
             icon: 'calendar',
-          },
-          {
-            id: 'Notifications',
-            title: t('notifications'),
-            icon: 'notifications',
-            action: () => {
-              handleClose();
-              setTimeout(() => setShowNotifModal(true), 200);
-            },
           },
           ...(user?.role === 'user'
             ? [
@@ -416,11 +405,6 @@ export default function SideMenu({ navigation }) {
           </SafeAreaView>
         </Animated.View>
       </View>
-
-      <NotificationsModal
-        visible={showNotifModal}
-        onClose={() => setShowNotifModal(false)}
-      />
     </Modal>
   );
 }
