@@ -108,11 +108,9 @@ All store graphic assets are saved in `mobile/store-assets/`:
 |---|---|---|---|
 | **App Icon** | `mobile/store-assets/icon-512.png` | 512 x 512 px | 32-bit PNG, max 1024 KB |
 | **Feature Graphic** | `mobile/store-assets/feature-graphic.png` | 1024 x 500 px | PNG / JPEG, max 15 MB |
-| **Screenshot 1** | `mobile/store-assets/screenshots/01-browse-caregivers.png` | 1080 x 2254 px | Phone portrait screenshot |
-| **Screenshot 2** | `mobile/store-assets/screenshots/02-caregiver-profile-details.png` | 1080 x 2079 px | Profile & pricing details |
-| **Screenshot 3** | `mobile/store-assets/screenshots/03-caregiver-registration.png` | 1080 x 2113 px | Caregiver registration |
-| **Screenshot 4** | `mobile/store-assets/screenshots/04-view-profile-screen.png` | 1080 x 2113 px | Verified credentials view |
-| **Screenshot 5** | `mobile/store-assets/screenshots/05-google-oauth-flow.png` | 1080 x 2171 px | Secure Google OAuth sign-in |
+| **Screenshot 1 (EN)** | `mobile/store-assets/screenshots/01-home-screen-en.png` | 1080 x 2160 px | Verified Care Platform Home (English) |
+| **Screenshot 2 (AR)** | `mobile/store-assets/screenshots/02-home-screen-ar.png` | 1080 x 2160 px | Verified Care Platform Home (Arabic RTL) |
+| *Originals* | `mobile/store-assets/screenshots/original/` | 460 x 1024 px | Raw device screenshots |
 
 ---
 
