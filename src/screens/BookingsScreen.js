@@ -444,6 +444,8 @@ const styles = StyleSheet.create({
   },
   cardBottom: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
@@ -463,15 +465,20 @@ const styles = StyleSheet.create({
   },
   actionButtonsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
     gap: 8,
   },
   actionBtn: {
+    minHeight: 44,
+    maxWidth: '100%',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: radius.pill,
   },
   actionBtnText: {
     fontSize: 12,
+    lineHeight: 18,
   },
   centerContainer: {
     flex: 1,
