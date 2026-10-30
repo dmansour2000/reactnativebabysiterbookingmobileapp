@@ -1,80 +1,100 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { StyleSheet, Pressable, Text, ActivityIndicator } from 'react-native';
+import { colors, radius, spacing, shadows } from '../theme';
 
 export default function Button({
   title,
   onPress,
-  variant = 'plum', // 'plum' | 'primary' | 'outline' | 'danger'
+  variant = 'plum',
   loading = false,
   disabled = false,
   style,
   textStyle,
   icon,
+  accessibilityLabel,
+  accessibilityHint,
+  testID,
 }) {
-  const getBackgroundColor = () => {
-    if (disabled) return '#d1c7d4';
-    if (variant === 'primary') return colors.primary;
-    if (variant === 'outline') return 'transparent';
-    if (variant === 'danger') return colors.danger;
-    return colors.plum;
-  };
-
-  const getTextColor = () => {
-    if (disabled) return '#8c8090';
-    if (variant === 'outline') return colors.plum;
-    return colors.white;
-  };
+  const blocked = disabled || loading;
+  const outlined = variant === 'outline';
+  const backgroundColor = disabled
+    ? '#e7dfe9'
+    : outlined
+      ? colors.white
+      : variant === 'primary'
+        ? colors.primary
+        : variant === 'danger'
+          ? colors.danger
+          : colors.plum;
+  const foregroundColor = disabled
+    ? colors.textMuted
+    : outlined ? colors.plum : colors.white;
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        { backgroundColor: getBackgroundColor() },
-        variant === 'outline' && styles.outlineButton,
-        style,
-      ]}
+    <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.8}
+      disabled={blocked}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: blocked, busy: loading }}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.button,
+        { backgroundColor },
+        outlined && styles.outline,
+        disabled && styles.disabled,
+        style,
+        pressed && !blocked && styles.pressed,
+      ]}
     >
       {loading ? (
-        <ActivityIndicator color={getTextColor()} size="small" />
+        <ActivityIndicator color={foregroundColor} size="small" />
       ) : (
         <>
           {icon}
-          <Text style={[styles.text, { color: getTextColor() }, textStyle]}>
+          <Text style={[styles.text, { color: foregroundColor }, textStyle]}>
             {title}
           </Text>
         </>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
+    ...shadows.card,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 13,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    gap: 8,
-    shadowColor: '#4a2b5c',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
   },
-  outlineButton: {
+  outline: {
     borderWidth: 1.5,
     borderColor: colors.plum,
     shadowOpacity: 0,
     elevation: 0,
   },
+  disabled: {
+    borderColor: colors.borderLight,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   text: {
+    flexShrink: 1,
     fontSize: 15,
+    lineHeight: 22,
     fontWeight: '700',
     textAlign: 'center',
   },
